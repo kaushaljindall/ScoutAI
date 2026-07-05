@@ -44,3 +44,13 @@ export const useDeleteLeads = () => {
     },
   });
 };
+
+export const useDiscoverBusinesses = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: scoutService.discoverBusinesses,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: scoutKeys.lists() });
+    },
+  });
+};

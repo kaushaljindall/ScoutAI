@@ -1,5 +1,6 @@
 import { useScoutStore } from '@/store/scoutStore';
-import { Search, Filter, X } from 'lucide-react';
+import { useDiscoverBusinesses } from '@/hooks/useScout';
+import { Search, Filter, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 const smartFiltersOptions = [
@@ -16,7 +17,29 @@ const smartFiltersOptions = [
 const industries = ['Healthcare', 'Restaurants', 'Real Estate', 'Education', 'Manufacturing', 'Agencies', 'Startups', 'Custom'];
 
 export const ScoutFilters = () => {
-  const { filters, setFilters, resetFilters } = useScoutStore();
+  const { filters, setFilters, resetFilters, setIsDiscovering, setDiscoveryStatus } = useScoutStore();
+  const discoverMutation = useDiscoverBusinesses();
+
+  const handleDiscover = () => {
+    if (!filters.q) return;
+    setIsDiscovering(true);
+    setDiscoveryStatus('Discovering Businesses...');
+    
+    // Simulate steps for UI
+    setTimeout(() => setDiscoveryStatus('Normalizing & Validating Data...'), 1500);
+    setTimeout(() => setDiscoveryStatus('Removing Duplicates...'), 3000);
+    setTimeout(() => setDiscoveryStatus('Saving Results...'), 4500);
+
+    discoverMutation.mutate(
+      { query: filters.q, location: filters.city, max_results: 10 },
+      {
+        onSettled: () => {
+          setIsDiscovering(false);
+          setDiscoveryStatus('');
+        }
+      }
+    );
+  };
 
   const toggleSmartFilter = (id: string) => {
     const current = filters.smartFilters;
@@ -34,14 +57,20 @@ export const ScoutFilters = () => {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" />
           <input
             type="text"
-            placeholder="Search businesses by name, email, or keywords..."
+            placeholder="Discover businesses (e.g. Dentists in Chandler)..."
             className="w-full h-10 bg-surface/50 border border-border/50 rounded-lg pl-9 pr-4 text-sm focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all"
             value={filters.q}
             onChange={(e) => setFilters({ q: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleDiscover();
+            }}
           />
         </div>
+        <Button onClick={handleDiscover} isLoading={discoverMutation.isPending} className="gap-2 bg-accent text-background hover:bg-accent-hover">
+          <Sparkles size={14} /> Discover
+        </Button>
         <Button variant="outline" className="gap-2">
-          <Filter size={14} /> Advanced Filters
+          <Filter size={14} /> Filters
         </Button>
       </div>
 

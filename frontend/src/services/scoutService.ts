@@ -9,11 +9,19 @@ export interface Business {
   email?: string;
   instagram?: string;
   linkedin?: string;
+  facebook_url?: string;
   city?: string;
   state?: string;
   country?: string;
   google_rating?: number;
   review_count: number;
+  website_status?: string;
+  logo_url?: string;
+  latitude?: number;
+  longitude?: number;
+  last_checked?: string;
+  source?: string;
+  confidence_score?: number;
   created_at: string;
 }
 
@@ -48,6 +56,11 @@ export const scoutService = {
   
   exportLeads: async () => {
     const response = await api.post('/scout/export', null, { responseType: 'blob' });
+    return response.data;
+  },
+
+  discoverBusinesses: async (params: { query: string; location?: string; max_results?: number; filters?: any }) => {
+    const response = await api.post('/scout/discover', params);
     return response.data;
   }
 };

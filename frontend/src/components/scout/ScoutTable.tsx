@@ -56,6 +56,15 @@ export const ScoutTable = ({ data, isLoading }: ScoutTableProps) => {
       cell: info => <span className="text-sm text-primary/60">{info.getValue() || '-'}</span>,
       size: 150,
     }),
+    columnHelper.accessor('source', {
+      header: 'Source',
+      cell: info => (
+        <span className="text-xs px-2 py-1 bg-surface rounded text-primary/70 border border-border/50">
+          {info.getValue() || 'Manual'}
+        </span>
+      ),
+      size: 100,
+    }),
     columnHelper.display({
       id: 'contact',
       header: 'Contact',
@@ -89,6 +98,16 @@ export const ScoutTable = ({ data, isLoading }: ScoutTableProps) => {
         </div>
       ),
       size: 120,
+    }),
+    columnHelper.accessor('website_status', {
+      header: 'Web Status',
+      cell: info => {
+        const val = info.getValue();
+        if (!val) return <span className="text-xs text-primary/30">-</span>;
+        if (val === 'reachable') return <span className="text-xs text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Active</span>;
+        return <span className="text-xs text-red-500 bg-red-500/10 px-2 py-1 rounded capitalize">{val}</span>;
+      },
+      size: 100,
     }),
   ];
 

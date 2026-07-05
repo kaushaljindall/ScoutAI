@@ -17,6 +17,10 @@ interface ScoutState {
   isDrawerOpen: boolean;
   setIsDrawerOpen: (isOpen: boolean) => void;
   resetFilters: () => void;
+  isDiscovering: boolean;
+  setIsDiscovering: (status: boolean) => void;
+  discoveryStatus: string;
+  setDiscoveryStatus: (status: string) => void;
 }
 
 const initialFilters: ScoutFilters = {
@@ -43,4 +47,8 @@ export const useScoutStore = create<ScoutState>((set) => ({
   isDrawerOpen: false,
   setIsDrawerOpen: (isOpen) => set({ isDrawerOpen: isOpen }),
   resetFilters: () => set({ filters: initialFilters }),
+  isDiscovering: false,
+  setIsDiscovering: (status) => set({ isDiscovering: status }),
+  discoveryStatus: '',
+  setDiscoveryStatus: (status) => set({ discoveryStatus: status }),
 }));

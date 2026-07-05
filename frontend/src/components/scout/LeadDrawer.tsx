@@ -18,6 +18,8 @@ export const LeadDrawer = () => {
     { id: 'social', label: 'Social' },
     { id: 'notes', label: 'Notes' },
     { id: 'history', label: 'History' },
+    { id: 'discovery', label: 'Discovery Details' },
+    { id: 'raw_source', label: 'Raw Source' },
   ];
 
   // Close drawer
@@ -167,6 +169,44 @@ export const LeadDrawer = () => {
                           {[business?.city, business?.state, business?.country].filter(Boolean).join(', ') || 'Not available'}
                         </p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Discovery Details Tab */}
+                  <div className={cn("space-y-4", activeTab === 'discovery' ? 'block' : 'hidden')}>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 rounded-lg border border-border/50 bg-background">
+                        <p className="text-xs text-primary/50 mb-1">Source Provider</p>
+                        <p className="font-semibold text-sm capitalize">{business?.source || 'Manual Entry'}</p>
+                      </div>
+                      <div className="p-3 rounded-lg border border-border/50 bg-background">
+                        <p className="text-xs text-primary/50 mb-1">Confidence Score</p>
+                        <p className="font-semibold text-sm">{business?.confidence_score ? `${(business.confidence_score * 100).toFixed(0)}%` : 'N/A'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 rounded-lg border border-border/50 bg-background space-y-3">
+                      <div className="flex justify-between items-center border-b border-border/50 pb-2">
+                        <span className="text-sm text-primary/60">Website Status</span>
+                        <span className={cn("text-xs px-2 py-1 rounded", business?.website_status === 'reachable' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-surface text-primary/50')}>
+                          {business?.website_status || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-primary/60">Last Checked</span>
+                        <span className="text-sm">
+                          {business?.last_checked ? new Date(business.last_checked).toLocaleDateString() : 'Never'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Raw Source Tab */}
+                  <div className={cn("space-y-4", activeTab === 'raw_source' ? 'block' : 'hidden')}>
+                    <div className="p-4 rounded-lg border border-border/50 bg-[#0d0d0f] overflow-x-auto">
+                      <pre className="text-xs font-mono text-primary/70">
+                        {JSON.stringify(business, null, 2)}
+                      </pre>
                     </div>
                   </div>
 

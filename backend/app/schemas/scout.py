@@ -11,11 +11,20 @@ class BusinessBase(BaseModel):
     email: Optional[str] = None
     instagram: Optional[str] = None
     linkedin: Optional[str] = None
+    facebook_url: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
     google_rating: Optional[float] = None
     review_count: int = 0
+    website_status: Optional[str] = None
+    logo_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    last_checked: Optional[datetime] = None
+    source: Optional[str] = None
+    confidence_score: Optional[float] = None
+    raw_data: Optional[Dict[str, Any]] = None
 
 class BusinessResponse(BusinessBase):
     id: UUID

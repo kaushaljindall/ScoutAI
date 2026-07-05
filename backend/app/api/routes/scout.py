@@ -131,5 +131,79 @@ def export_leads(
     """
     Export saved leads as CSV (Mock)
     """
+@router.post("/discover", response_model=Any) # Will return DiscoverResponse schema format
+def discover_businesses(
+    request: Any, # Use DiscoverRequest
+    db: SessionDep,
+    current_user: CurrentUser
+) -> Any:
+    """
+    Trigger the discovery pipeline.
+    """
+    # Import here to avoid circular imports if any
+    from app.services.discovery.pipeline import DiscoveryPipeline
+    from app.schemas.discovery import DiscoverRequest, DiscoverResponse
+    
+    # We duck-type the request to avoid Schema import issues at the top level
+    req_data = request if isinstance(request, dict) else request.model_dump()
+    
+    pipeline = DiscoveryPipeline(db, current_user.id)
+    result = pipeline.run(
+        query=req_data.get("query"),
+        location=req_data.get("location"),
+        max_results=req_data.get("max_results", 10),
+        filters=req_data.get("filters")
+    )
+    return result
+
+@router.post("/business/{id}/refresh")
+def refresh_business(
+    id: str,
+    db: SessionDep,
+    current_user: CurrentUser
+) -> Any:
+    """
+    Refresh a specific business data from source.
+    """
+    business = db.query(Business).filter(Business.id == id, Business.is_deleted == False).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    # Mock refresh logic
+    from datetime import datetime
+    business.last_checked = datetime.utcnow()
+    db.commit()
+    
+    return {"status": "success", "message": "Business refreshed"}
+
+@router.post("/business/{id}/validate")
+def validate_business(
+    id: str,
+    db: SessionDep,
+    current_user: CurrentUser
+) -> Any:
+    """
+    Re-validate a business data.
+    """
+    business = db.query(Business).filter(Business.id == id, Business.is_deleted == False).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+        
+    from app.services.discovery.validate import ValidationService
+    
+    business.website_status = ValidationService.validate_website_reachable(business.website)
+    
+    db.commit()
+    db.refresh(business)
+    return {"status": "success", "website_status": business.website_status}
+
+@router.post("/export")
+def export_leads(
+    db: SessionDep,
+    current_user: CurrentUser
+) -> Any:
+    """
+    Export saved leads as CSV (Mock)
+    """
     # In a real scenario, this would generate and return a CSV file
     return Response(content="id,business_name,email\n1,Test,test@test.com", media_type="text/csv")

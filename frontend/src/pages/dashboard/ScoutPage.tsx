@@ -5,11 +5,11 @@ import { ScoutTable } from '@/components/scout/ScoutTable';
 import { LeadDrawer } from '@/components/scout/LeadDrawer';
 
 export default function ScoutPage() {
-  const { filters } = useScoutStore();
+  const { filters, isDiscovering, discoveryStatus } = useScoutStore();
   const { data, isLoading, isError } = useSearchBusinesses(filters);
 
   return (
-    <div className="h-full flex flex-col pt-2 pb-6">
+    <div className="h-full flex flex-col pt-2 pb-6 relative">
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Scout</h1>
         <p className="text-primary/60 mt-1">Discover, analyze and organize your potential clients.</p>
@@ -18,6 +18,13 @@ export default function ScoutPage() {
       <ScoutFilters />
 
       <div className="flex-1 min-h-0 relative">
+        {isDiscovering && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
+            <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4" />
+            <p className="font-medium text-lg">{discoveryStatus || 'Processing...'}</p>
+          </div>
+        )}
+        
         {isError ? (
           <div className="flex flex-col items-center justify-center h-[400px] text-center text-red-500 bg-red-500/5 rounded-xl border border-red-500/20">
             <p className="font-medium">Failed to load businesses</p>
