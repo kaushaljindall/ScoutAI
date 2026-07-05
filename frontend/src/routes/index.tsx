@@ -16,6 +16,8 @@ import OutreachPage from '@/pages/dashboard/OutreachPage';
 import CRMPage from '@/pages/dashboard/CRMPage';
 import LeadCRMPage from '@/pages/dashboard/LeadCRMPage';
 import CopilotPage from '@/pages/dashboard/CopilotPage';
+import DocumentsPage from '@/pages/dashboard/DocumentsPage';
+import DocumentEditorPage from '@/pages/dashboard/DocumentEditorPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -82,6 +84,14 @@ export const router = createBrowserRouter([
       {
         path: 'copilot',
         element: <CopilotPage />,
+      },
+      {
+        path: 'documents',
+        element: <DocumentsPage />,
+      },
+      {
+        path: 'documents/:id',
+        element: <DocumentEditorPage />,
       },
     ],
   },

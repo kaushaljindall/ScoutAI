@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetDocument, useUpdateDocument } from '@/hooks/useDocuments';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, Save, Download, FileText, Settings, Copy, Printer } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Settings, Copy, Printer } from 'lucide-react';
 
 export default function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();

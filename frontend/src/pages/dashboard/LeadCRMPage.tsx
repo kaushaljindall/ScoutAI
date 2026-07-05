@@ -5,7 +5,7 @@ import { useGetConversations, useGetTasks, useGetTimeline } from '@/hooks/useCRM
 import { useGenerateDocument } from '@/hooks/useDocuments';
 import { crmService } from '@/services/crmService';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, MessageSquare, CheckSquare, Calendar, Clock, Sparkles, Send, Copy, AlertCircle, FileText, ChevronDown } from 'lucide-react';
+import { ArrowLeft, MessageSquare, CheckSquare, Calendar, Clock, Sparkles, Send, Copy, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
 

@@ -2,7 +2,7 @@ import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { useLogout } from '@/hooks/useAuth';
-import { LayoutDashboard, Search, Briefcase, Settings, Bot } from 'lucide-react';
+import { LayoutDashboard, Search, Briefcase, Settings, Bot, FileText } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export default function DashboardLayout() {
@@ -22,6 +22,7 @@ export default function DashboardLayout() {
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, exact: true },
     { name: 'Scout', path: '/dashboard/scout', icon: Search, exact: false },
     { name: 'CRM', path: '/dashboard/crm', icon: Briefcase, exact: false },
+    { name: 'Documents', path: '/dashboard/documents', icon: FileText, exact: false },
     { name: 'Copilot', path: '/dashboard/copilot', icon: Bot, exact: false },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings, exact: false },
   ];
