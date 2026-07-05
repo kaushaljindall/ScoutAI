@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetBusiness } from '@/hooks/useScout';
 import { useGetConversations, useGetTasks, useGetTimeline } from '@/hooks/useCRM';
+import { useGenerateDocument } from '@/hooks/useDocuments';
 import { crmService } from '@/services/crmService';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, MessageSquare, CheckSquare, Calendar, Clock, Sparkles, Send, Copy, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, CheckSquare, Calendar, Clock, Sparkles, Send, Copy, AlertCircle, FileText, ChevronDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -17,6 +18,7 @@ export default function LeadCRMPage() {
   const { data: conversations, isLoading: convLoading } = useGetConversations(id || null);
   const { data: tasks, isLoading: tasksLoading } = useGetTasks(id);
   const { data: timeline, isLoading: timelineLoading } = useGetTimeline(id || null);
+  const { mutate: generateDocument, isPending: isGeneratingDoc } = useGenerateDocument();
   
   const [activeTab, setActiveTab] = useState<'conversations' | 'tasks' | 'timeline'>('conversations');
   const [newMessage, setNewMessage] = useState('');

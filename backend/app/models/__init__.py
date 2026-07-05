@@ -4,5 +4,6 @@ from app.models.scout import Business, SavedLead, SearchHistory, BusinessAnalysi
 from app.models.outreach import MessageTemplate, GeneratedMessage
 from app.models.crm import Conversation, AIConversationAnalysis, Task, TimelineEvent
 from app.models.copilot import AIChat, AIMessage, UserPreference
+from app.models.documents import Document, DocumentTemplate, Branding
 
-__all__ = ["BaseModel", "User", "Settings", "AuditLog", "RefreshToken", "PasswordResetToken", "Business", "SavedLead", "SearchHistory", "BusinessAnalysis", "MessageTemplate", "GeneratedMessage", "Conversation", "AIConversationAnalysis", "Task", "TimelineEvent", "AIChat", "AIMessage", "UserPreference"]
+__all__ = ["BaseModel", "User", "Settings", "AuditLog", "RefreshToken", "PasswordResetToken", "Business", "SavedLead", "SearchHistory", "BusinessAnalysis", "MessageTemplate", "GeneratedMessage", "Conversation", "AIConversationAnalysis", "Task", "TimelineEvent", "AIChat", "AIMessage", "UserPreference", "Document", "DocumentTemplate", "Branding"]
