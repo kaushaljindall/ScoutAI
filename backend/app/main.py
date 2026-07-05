@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, scout, ai, outreach, crm, copilot, documents
+from app.api.routes import auth, scout, ai, outreach, crm, copilot, documents, analytics
 from app.core.config import settings
 
 app = FastAPI(
@@ -24,6 +24,7 @@ app.include_router(outreach.router, prefix="/api/v1/outreach", tags=["outreach"]
 app.include_router(crm.router, prefix="/api/v1/crm", tags=["crm"])
 app.include_router(copilot.router, prefix="/api/v1/copilot", tags=["copilot"])
 app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
 
 @app.get("/health")
 def health_check():

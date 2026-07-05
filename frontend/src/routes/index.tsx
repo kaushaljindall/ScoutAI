@@ -18,6 +18,7 @@ import LeadCRMPage from '@/pages/dashboard/LeadCRMPage';
 import CopilotPage from '@/pages/dashboard/CopilotPage';
 import DocumentsPage from '@/pages/dashboard/DocumentsPage';
 import DocumentEditorPage from '@/pages/dashboard/DocumentEditorPage';
+import AnalyticsPage from '@/pages/dashboard/AnalyticsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -92,6 +93,10 @@ export const router = createBrowserRouter([
       {
         path: 'documents/:id',
         element: <DocumentEditorPage />,
+      },
+      {
+        path: 'analytics',
+        element: <AnalyticsPage />,
       },
     ],
   },
