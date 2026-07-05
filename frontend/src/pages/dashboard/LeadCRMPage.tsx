@@ -64,6 +64,23 @@ export default function LeadCRMPage() {
             <p className="text-primary/60 text-sm mt-0.5">Manage interactions and history.</p>
           </div>
         </div>
+        
+        <div className="flex items-center gap-2">
+           <Button 
+             className="gap-2 bg-accent text-background hover:bg-accent-hover"
+             disabled={isGeneratingDoc}
+             onClick={() => {
+               if(id) {
+                 generateDocument({ lead_id: id, type: 'proposal' }, {
+                   onSuccess: (data) => navigate(`/dashboard/documents/${data.id}`)
+                 });
+               }
+             }}
+           >
+             <Sparkles size={16} /> 
+             {isGeneratingDoc ? 'Generating Proposal...' : 'Generate Proposal'}
+           </Button>
+        </div>
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
