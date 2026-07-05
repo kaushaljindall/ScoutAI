@@ -1,0 +1,49 @@
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, List, Dict, Any
+from uuid import UUID
+from datetime import datetime
+
+class BusinessBase(BaseModel):
+    business_name: str
+    category: Optional[str] = None
+    website: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    instagram: Optional[str] = None
+    linkedin: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    google_rating: Optional[float] = None
+    review_count: int = 0
+
+class BusinessResponse(BusinessBase):
+    id: UUID
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class SavedLeadBase(BaseModel):
+    business_id: UUID
+    status: str = "new"
+    tags: List[str] = []
+    notes: Optional[str] = None
+
+class SavedLeadCreate(SavedLeadBase):
+    pass
+
+class SavedLeadResponse(SavedLeadBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime
+    business: BusinessResponse
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class PaginatedBusinesses(BaseModel):
+    items: List[BusinessResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
