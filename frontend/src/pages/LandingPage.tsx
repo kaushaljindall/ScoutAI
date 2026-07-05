@@ -1,8 +1,10 @@
 
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
+import TrustedBy from '@/components/TrustedBy';
 import Features from '@/components/Features';
 import Workflow from '@/components/Workflow';
+import DashboardShowcase from '@/components/DashboardShowcase';
 import BentoGrid from '@/components/BentoGrid';
 import Testimonials from '@/components/Testimonials';
 import Pricing from '@/components/Pricing';
@@ -16,8 +18,10 @@ function LandingPage() {
       <Navbar />
       <main>
         <Hero />
+        <TrustedBy />
         <Features />
         <Workflow />
+        <DashboardShowcase />
         <BentoGrid />
         <Testimonials />
         <Pricing />

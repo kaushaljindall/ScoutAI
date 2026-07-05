@@ -62,19 +62,6 @@ const Testimonials = () => {
             </motion.div>
           ))}
         </div>
-        
-        {/* Trusted By Logos */}
-        <div className="mt-24 border-t border-border/50 pt-12">
-          <p className="text-center text-sm text-primary/40 font-medium mb-8">TRUSTED BY TEAMS AT</p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-            {/* Using text representations instead of images for clean look */}
-            <span className="text-xl font-bold tracking-tighter">LINEAR</span>
-            <span className="text-xl font-bold tracking-tight">Vercel</span>
-            <span className="text-xl font-semibold tracking-wide">stripe</span>
-            <span className="text-xl font-bold">Raycast</span>
-            <span className="text-xl font-bold tracking-tight">RESEND</span>
-          </div>
-        </div>
       </div>
     </section>
   );
