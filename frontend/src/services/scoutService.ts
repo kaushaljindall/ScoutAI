@@ -62,5 +62,10 @@ export const scoutService = {
   discoverBusinesses: async (params: { query: string; location?: string; max_results?: number; filters?: any }) => {
     const response = await api.post('/scout/discover', params);
     return response.data;
+  },
+
+  getSavedLeads: async () => {
+    const response = await api.get('/scout/saved');
+    return response.data;
   }
 };

@@ -7,6 +7,14 @@ export const scoutKeys = {
   list: (filters: string) => [...scoutKeys.lists(), { filters }] as const,
   details: () => [...scoutKeys.all, 'detail'] as const,
   detail: (id: string) => [...scoutKeys.details(), id] as const,
+  savedLeads: () => [...scoutKeys.all, 'savedLeads'] as const,
+};
+
+export const useGetSavedLeads = () => {
+  return useQuery({
+    queryKey: scoutKeys.savedLeads(),
+    queryFn: scoutService.getSavedLeads,
+  });
 };
 
 export const useSearchBusinesses = (filters: any) => {

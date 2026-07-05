@@ -74,3 +74,6 @@ class SavedLead(BaseModel):
 
     user = relationship("User")
     business = relationship("Business", back_populates="saved_leads")
+    conversations = relationship("Conversation", back_populates="lead", cascade="all, delete-orphan", primaryjoin="SavedLead.id == Conversation.lead_id")
+    tasks = relationship("Task", back_populates="lead", cascade="all, delete-orphan", primaryjoin="SavedLead.id == Task.lead_id")
+    timeline_events = relationship("TimelineEvent", back_populates="lead", cascade="all, delete-orphan", primaryjoin="SavedLead.id == TimelineEvent.lead_id")

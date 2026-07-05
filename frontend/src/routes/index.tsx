@@ -13,6 +13,8 @@ import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import ScoutPage from '@/pages/dashboard/ScoutPage';
 import OutreachPage from '@/pages/dashboard/OutreachPage';
+import CRMPage from '@/pages/dashboard/CRMPage';
+import LeadCRMPage from '@/pages/dashboard/LeadCRMPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -67,6 +69,14 @@ export const router = createBrowserRouter([
       {
         path: 'outreach/:id',
         element: <OutreachPage />,
+      },
+      {
+        path: 'crm',
+        element: <CRMPage />,
+      },
+      {
+        path: 'crm/:id',
+        element: <LeadCRMPage />,
       },
     ],
   },
