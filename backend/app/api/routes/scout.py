@@ -1,16 +1,14 @@
 import math
 from typing import Any, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Response
-from sqlalchemy import or_
-from app.api.deps import SessionDep, CurrentUser
+from app.api.deps import CurrentUser
 from app.models.scout import Business, SavedLead
 from app.schemas.scout import BusinessResponse, PaginatedBusinesses, SavedLeadCreate, SavedLeadResponse
 
 router = APIRouter()
 
 @router.get("/search", response_model=PaginatedBusinesses)
-def search_businesses(
-    db: SessionDep,
+async def search_businesses(
     current_user: CurrentUser,
     q: Optional[str] = None,
     category: Optional[str] = None,
@@ -18,192 +16,88 @@ def search_businesses(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100)
 ) -> Any:
-    """
-    Search businesses in the database
-    """
-    query = db.query(Business).filter(Business.is_deleted == False)
-
+    filter_query = {"is_deleted": False}
     if q:
-        search_filter = or_(
-            Business.business_name.ilike(f"%{q}%"),
-            Business.website.ilike(f"%{q}%"),
-            Business.email.ilike(f"%{q}%")
-        )
-        query = query.filter(search_filter)
-
+        filter_query["$or"] = [
+            {"business_name": {"$regex": q, "$options": "i"}},
+            {"website": {"$regex": q, "$options": "i"}},
+            {"email": {"$regex": q, "$options": "i"}},
+        ]
     if category:
-        query = query.filter(Business.category.ilike(f"%{category}%"))
-        
+        filter_query["category"] = {"$regex": category, "$options": "i"}
     if city:
-        query = query.filter(Business.city.ilike(f"%{city}%"))
+        filter_query["city"] = {"$regex": city, "$options": "i"}
 
-    total = query.count()
+    total = await Business.find(filter_query).count()
     pages = math.ceil(total / size) if total > 0 else 0
-    
-    businesses = query.order_by(Business.created_at.desc()).offset((page - 1) * size).limit(size).all()
+    businesses = await Business.find(filter_query).skip((page - 1) * size).limit(size).sort("-created_at").to_list()
 
-    return {
-        "items": businesses,
-        "total": total,
-        "page": page,
-        "size": size,
-        "pages": pages
-    }
+    return {"items": businesses, "total": total, "page": page, "size": size, "pages": pages}
 
 @router.get("/business/{id}", response_model=BusinessResponse)
-def get_business(
-    id: str,
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Get business details by ID
-    """
-    business = db.query(Business).filter(Business.id == id, Business.is_deleted == False).first()
+async def get_business(id: str, current_user: CurrentUser) -> Any:
+    business = await Business.find_one(Business.id == id, Business.is_deleted == False)
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
     return business
 
 @router.post("/save", response_model=SavedLeadResponse)
-def save_lead(
-    lead_in: SavedLeadCreate,
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Save a business as a lead
-    """
-    business = db.query(Business).filter(Business.id == lead_in.business_id).first()
+async def save_lead(lead_in: SavedLeadCreate, current_user: CurrentUser) -> Any:
+    business = await Business.find_one(Business.id == lead_in.business_id)
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
-        
-    existing_lead = db.query(SavedLead).filter(
-        SavedLead.user_id == current_user.id,
+
+    existing = await SavedLead.find_one(
+        SavedLead.user_id == str(current_user.id),
         SavedLead.business_id == lead_in.business_id,
         SavedLead.is_deleted == False
-    ).first()
-    
-    if existing_lead:
-        # Update existing
-        existing_lead.status = lead_in.status
+    )
+    if existing:
+        existing.status = lead_in.status
         if lead_in.tags:
-            existing_lead.tags = lead_in.tags
+            existing.tags = lead_in.tags
         if lead_in.notes is not None:
-            existing_lead.notes = lead_in.notes
-        db.commit()
-        db.refresh(existing_lead)
-        return existing_lead
+            existing.notes = lead_in.notes
+        await existing.save()
+        return existing
 
-    # Create new
     lead = SavedLead(
-        user_id=current_user.id,
+        user_id=str(current_user.id),
         business_id=lead_in.business_id,
         status=lead_in.status,
-        tags=lead_in.tags,
+        tags=lead_in.tags or [],
         notes=lead_in.notes
     )
-    db.add(lead)
-    db.commit()
-    db.refresh(lead)
+    await lead.insert()
     return lead
 
 @router.delete("/delete")
-def delete_leads(
-    ids: List[str],
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Bulk delete saved leads
-    """
-    db.query(SavedLead).filter(
-        SavedLead.id.in_(ids),
-        SavedLead.user_id == current_user.id
-    ).update({"is_deleted": True}, synchronize_session=False)
-    db.commit()
+async def delete_leads(ids: List[str], current_user: CurrentUser) -> Any:
+    for lead_id in ids:
+        lead = await SavedLead.find_one(SavedLead.id == lead_id, SavedLead.user_id == str(current_user.id))
+        if lead:
+            lead.is_deleted = True
+            await lead.save()
     return {"message": f"Successfully deleted {len(ids)} leads"}
 
-@router.post("/export")
-def export_leads(
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Export saved leads as CSV (Mock)
-    """
-@router.post("/discover", response_model=Any) # Will return DiscoverResponse schema format
-def discover_businesses(
-    request: Any, # Use DiscoverRequest
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Trigger the discovery pipeline.
-    """
-    # Import here to avoid circular imports if any
-    from app.services.discovery.pipeline import DiscoveryPipeline
-    from app.schemas.discovery import DiscoverRequest, DiscoverResponse
-    
-    # We duck-type the request to avoid Schema import issues at the top level
-    req_data = request if isinstance(request, dict) else request.model_dump()
-    
-    pipeline = DiscoveryPipeline(db, current_user.id)
-    result = pipeline.run(
-        query=req_data.get("query"),
-        location=req_data.get("location"),
-        max_results=req_data.get("max_results", 10),
-        filters=req_data.get("filters")
-    )
-    return result
+@router.get("/leads", response_model=List[SavedLeadResponse])
+async def get_leads(current_user: CurrentUser) -> Any:
+    leads = await SavedLead.find(
+        SavedLead.user_id == str(current_user.id),
+        SavedLead.is_deleted == False
+    ).sort("-created_at").to_list()
+    return leads
 
 @router.post("/business/{id}/refresh")
-def refresh_business(
-    id: str,
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Refresh a specific business data from source.
-    """
-    business = db.query(Business).filter(Business.id == id, Business.is_deleted == False).first()
+async def refresh_business(id: str, current_user: CurrentUser) -> Any:
+    business = await Business.find_one(Business.id == id, Business.is_deleted == False)
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
-        
-    # Mock refresh logic
     from datetime import datetime
     business.last_checked = datetime.utcnow()
-    db.commit()
-    
+    await business.save()
     return {"status": "success", "message": "Business refreshed"}
 
-@router.post("/business/{id}/validate")
-def validate_business(
-    id: str,
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Re-validate a business data.
-    """
-    business = db.query(Business).filter(Business.id == id, Business.is_deleted == False).first()
-    if not business:
-        raise HTTPException(status_code=404, detail="Business not found")
-        
-    from app.services.discovery.validate import ValidationService
-    
-    business.website_status = ValidationService.validate_website_reachable(business.website)
-    
-    db.commit()
-    db.refresh(business)
-    return {"status": "success", "website_status": business.website_status}
-
 @router.post("/export")
-def export_leads(
-    db: SessionDep,
-    current_user: CurrentUser
-) -> Any:
-    """
-    Export saved leads as CSV (Mock)
-    """
-    # In a real scenario, this would generate and return a CSV file
+async def export_leads(current_user: CurrentUser) -> Any:
     return Response(content="id,business_name,email\n1,Test,test@test.com", media_type="text/csv")

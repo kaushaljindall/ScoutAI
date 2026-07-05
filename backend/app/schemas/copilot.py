@@ -1,7 +1,8 @@
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional, Any
-from uuid import UUID
+from pydantic import BaseModel, ConfigDict, BeforeValidator
+from typing import List, Optional, Annotated
 from datetime import datetime
+
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class AIChatBase(BaseModel):
     title: str
@@ -15,19 +16,17 @@ class AIMessageBase(BaseModel):
     context_used: Optional[dict] = None
 
 class AIMessageResponse(AIMessageBase):
-    id: UUID
-    chat_id: UUID
+    id: PyObjectId
+    chat_id: PyObjectId
     created_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class AIChatResponse(AIChatBase):
-    id: UUID
-    user_id: UUID
+    id: PyObjectId
+    user_id: PyObjectId
     created_at: datetime
     messages: List[AIMessageResponse] = []
-    
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class UserPreferenceBase(BaseModel):
     preferred_tone: Optional[str] = None
@@ -37,23 +36,16 @@ class UserPreferenceBase(BaseModel):
     preferred_templates: List[str] = []
 
 class UserPreferenceResponse(UserPreferenceBase):
-    id: UUID
-    user_id: UUID
-    
-    model_config = ConfigDict(from_attributes=True)
+    id: PyObjectId
+    user_id: PyObjectId
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class CopilotChatRequest(BaseModel):
     message: str
-    chat_id: Optional[UUID] = None
-    current_context: Optional[dict] = None # Passes current UI state (e.g. active lead id)
+    chat_id: Optional[str] = None
+    current_context: Optional[dict] = None
 
 class CopilotChatResponse(BaseModel):
-    chat_id: UUID
+    chat_id: str
     message: AIMessageResponse
     suggested_actions: List[str] = []
-    
-class ContextSummary(BaseModel):
-    leads_count: int
-    overdue_follow_ups: int
-    high_opportunity_leads: int
-    unreplied_leads: int

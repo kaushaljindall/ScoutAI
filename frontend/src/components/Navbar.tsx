@@ -28,7 +28,7 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2 group cursor-pointer">
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.location.href = '/'}>
           <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-primary transition-colors duration-300">
             <Radar size={18} strokeWidth={2.5} />
           </div>
@@ -50,10 +50,16 @@ const Navbar = () => {
 
         {/* Right CTA */}
         <div className="flex items-center gap-4">
-          <button className="text-sm font-medium text-primary/80 hover:text-primary transition-colors hidden sm:block">
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="text-sm font-medium text-primary/80 hover:text-primary transition-colors hidden sm:block"
+          >
             Sign In
           </button>
-          <button className="bg-primary text-background hover:bg-primary/90 px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 active:scale-95">
+          <button 
+            onClick={() => window.location.href = '/register'}
+            className="bg-primary text-background hover:bg-primary/90 px-4 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105 active:scale-95"
+          >
             Get Started
           </button>
         </div>

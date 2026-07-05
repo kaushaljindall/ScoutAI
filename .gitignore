@@ -82,6 +82,7 @@ backend/.venv/
 backend/ENV/
 backend/env.bak/
 backend/venv.bak/
+venv 
 
 # Database SQLite (if any local DB is used)
 *.sqlite3
@@ -106,3 +107,5 @@ backend/.idea/
 
 # macOS
 .DS_Store
+setup.md
+SCOUT-AGENTS-INSTRUCTION-20251223201935.pdf

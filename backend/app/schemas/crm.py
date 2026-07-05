@@ -1,8 +1,8 @@
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional, Any
-from uuid import UUID
+from pydantic import BaseModel, ConfigDict, BeforeValidator
+from typing import List, Optional, Annotated
 from datetime import datetime
-from app.schemas.scout import BusinessBase
+
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class AIConversationAnalysisBase(BaseModel):
     summary: Optional[str] = None
@@ -22,12 +22,11 @@ class ConversationCreate(ConversationBase):
     pass
 
 class ConversationResponse(ConversationBase):
-    id: UUID
-    lead_id: UUID
+    id: PyObjectId
+    lead_id: PyObjectId
     created_at: datetime
     analysis: Optional[AIConversationAnalysisBase] = None
-    
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class TaskBase(BaseModel):
     title: str
@@ -37,16 +36,18 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     pass
 
-class TaskUpdate(TaskBase):
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
     completed: Optional[bool] = None
+    due_date: Optional[datetime] = None
+    type: Optional[str] = None
 
 class TaskResponse(TaskBase):
-    id: UUID
-    lead_id: UUID
+    id: PyObjectId
+    lead_id: PyObjectId
     completed: bool
     created_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class TimelineEventBase(BaseModel):
     event_type: str
@@ -54,11 +55,10 @@ class TimelineEventBase(BaseModel):
     metadata_json: Optional[dict] = None
 
 class TimelineEventResponse(TimelineEventBase):
-    id: UUID
-    lead_id: UUID
+    id: PyObjectId
+    lead_id: PyObjectId
     created_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class PipelineStatusUpdate(BaseModel):
     status: str

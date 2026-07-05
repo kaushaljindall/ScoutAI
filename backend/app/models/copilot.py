@@ -1,35 +1,47 @@
-from sqlalchemy import Column, String, Text, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-from app.models.base import BaseModel
+from typing import Optional, List
+from beanie import Indexed
+from app.models.base import BaseDocument
 
-class AIChat(BaseModel):
-    __tablename__ = "ai_chats"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    title = Column(String, nullable=False, default="New Chat")
+class AIChat(BaseDocument):
+    user_id: Indexed(str)
+    title: str = "New Chat"
 
-    user = relationship("User")
-    messages = relationship("AIMessage", back_populates="chat", cascade="all, delete-orphan", order_by="AIMessage.created_at")
+    class Settings:
+        name = "ai_chats"
 
-class AIMessage(BaseModel):
-    __tablename__ = "ai_messages"
 
-    chat_id = Column(UUID(as_uuid=True), ForeignKey("ai_chats.id"), nullable=False, index=True)
-    role = Column(String, nullable=False) # user or assistant
-    message = Column(Text, nullable=False)
-    context_used = Column(JSON, nullable=True) # Store what context was used for this reply
+class AIMessage(BaseDocument):
+    chat_id: Indexed(str)
+    role: str  # user or assistant
+    message: str
+    context_used: Optional[dict] = None
 
-    chat = relationship("AIChat", back_populates="messages")
+    class Settings:
+        name = "ai_messages"
 
-class UserPreference(BaseModel):
-    __tablename__ = "user_preferences"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True, index=True)
-    preferred_tone = Column(String, nullable=True)
-    preferred_language = Column(String, nullable=True)
-    preferred_services = Column(JSON, default=[])
-    preferred_industries = Column(JSON, default=[])
-    preferred_templates = Column(JSON, default=[])
+class UserPreferences(BaseDocument):
+    user_id: Indexed(str, unique=True)
+    preferred_tone: Optional[str] = None
+    preferred_language: Optional[str] = None
+    preferred_services: List[str] = []
+    preferred_industries: List[str] = []
+    preferred_templates: List[str] = []
 
-    user = relationship("User")
+    class Settings:
+        name = "user_preferences"
+
+
+class Branding(BaseDocument):
+    user_id: Indexed(str, unique=True)
+    company_name: Optional[str] = None
+    logo: Optional[str] = None
+    website: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    colors: dict = {}
+    signature: Optional[str] = None
+
+    class Settings:
+        name = "branding"

@@ -18,7 +18,9 @@ import app.models # this imports all models through __init__
 config = context.config
 
 # Overwrite the sqlalchemy.url from our env variables
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("postgres://", "postgresql://"))
+db_url = settings.DIRECT_URL or settings.DATABASE_URL
+db_url = db_url.replace("postgres://", "postgresql://").replace("%", "%%")
+config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -60,16 +62,31 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
+    """Run migrations in 'online' mode."""
+    from sqlalchemy import create_engine
+    from urllib.parse import urlparse, unquote
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
+    raw_url = settings.DIRECT_URL or settings.DATABASE_URL
+    raw_url = raw_url.replace("postgres://", "postgresql://")
+    
+    # Parse URL to extract components (handles %40 in password correctly)
+    parsed = urlparse(raw_url)
+    username = unquote(parsed.username or "")
+    password = unquote(parsed.password or "")
+    host = parsed.hostname
+    port = parsed.port or 5432
+    dbname = parsed.path.lstrip("/")
 
-    """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
+    connectable = create_engine(
+        "postgresql+psycopg2://",
+        creator=lambda: __import__("psycopg2").connect(
+            host=host,
+            port=port,
+            dbname=dbname,
+            user=username,
+            password=password,
+            sslmode="require"
+        )
     )
 
     with connectable.connect() as connection:

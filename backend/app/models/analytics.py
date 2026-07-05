@@ -1,38 +1,37 @@
-from sqlalchemy import Column, String, Text, ForeignKey, JSON, Integer, Float, DateTime
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from typing import Optional
 from datetime import datetime
-from app.models.base import BaseModel
+from beanie import Indexed
+from app.models.base import BaseDocument
 
-class Goal(BaseModel):
-    __tablename__ = "goals"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    title = Column(String, nullable=False)
-    type = Column(String, nullable=False) # revenue, contacts, deals, follow_ups
-    target_value = Column(Float, nullable=False)
-    current_value = Column(Float, default=0.0)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
-    status = Column(String, default="active") # active, completed, failed
+class Goal(BaseDocument):
+    user_id: Indexed(str)
+    title: str
+    type: str  # revenue, contacts, deals, follow_ups
+    target_value: float
+    current_value: float = 0.0
+    start_date: datetime
+    end_date: datetime
+    status: str = "active"  # active, completed, failed
 
-    user = relationship("User")
+    class Settings:
+        name = "goals"
 
-class AnalyticsEvent(BaseModel):
-    __tablename__ = "analytics_events"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    event_type = Column(String, nullable=False, index=True)
-    event_data = Column(JSON, default={})
+class AnalyticsEvent(BaseDocument):
+    user_id: Indexed(str)
+    event_type: Indexed(str)
+    event_data: dict = {}
 
-    user = relationship("User")
+    class Settings:
+        name = "analytics_events"
 
-class Report(BaseModel):
-    __tablename__ = "reports"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    type = Column(String, nullable=False) # weekly, monthly, quarterly
-    insights = Column(JSON, nullable=False)
-    date_range = Column(String, nullable=False)
+class Report(BaseDocument):
+    user_id: Indexed(str)
+    type: str  # weekly, monthly, quarterly
+    insights: dict
+    date_range: str
 
-    user = relationship("User")
+    class Settings:
+        name = "reports"

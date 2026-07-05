@@ -3,6 +3,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "ScoutAI"
+    ENVIRONMENT: str = "development"
     API_V1_STR: str = "/api/v1"
     
     # Security
@@ -12,8 +13,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Database
-    DATABASE_URL: str
+    # Database - MongoDB
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DB_NAME: str = "scoutai"
     
     # Frontend URL
     FRONTEND_URL: str

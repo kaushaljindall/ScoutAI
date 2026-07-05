@@ -1,25 +1,39 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
 from app.core.config import settings
 
-# Modify Supabase string to use standard PostgreSQL connection
-# Supabase URLs usually look like postgresql://postgres.xxxxx:password@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
-# For SQLAlchemy, it must be postgresql:// (not postgres://)
-engine = create_engine(
-    settings.DATABASE_URL.replace("postgres://", "postgresql://"),
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20
-)
+_client: AsyncIOMotorClient = None
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def get_client() -> AsyncIOMotorClient:
+    return _client
 
-Base = declarative_base()
+async def connect_db():
+    global _client
+    _client = AsyncIOMotorClient(settings.MONGODB_URI)
+    
+    # Import all documents for beanie initialization
+    from app.models.user import User, RefreshToken, PasswordResetToken, Settings as UserSettings, AuditLog
+    from app.models.scout import Business, BusinessAnalysis, SearchHistory, SavedLead
+    from app.models.outreach import MessageTemplate, GeneratedMessage
+    from app.models.crm import Conversation, Task, TimelineEvent
+    from app.models.copilot import AIChat, AIMessage, UserPreferences, Branding
+    from app.models.documents import Document, DocumentTemplate
+    from app.models.analytics import Goal, AnalyticsEvent, Report
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    await init_beanie(
+        database=_client[settings.MONGODB_DB_NAME],
+        document_models=[
+            User, RefreshToken, PasswordResetToken, UserSettings, AuditLog,
+            Business, BusinessAnalysis, SearchHistory, SavedLead,
+            MessageTemplate, GeneratedMessage,
+            Conversation, Task, TimelineEvent,
+            AIChat, AIMessage, UserPreferences, Branding,
+            Document, DocumentTemplate,
+            Goal, AnalyticsEvent, Report,
+        ]
+    )
+
+async def disconnect_db():
+    global _client
+    if _client:
+        _client.close()

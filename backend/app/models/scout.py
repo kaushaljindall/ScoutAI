@@ -1,79 +1,73 @@
-from sqlalchemy import Column, String, Float, Integer, Boolean, ForeignKey, JSON, DateTime
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from typing import Optional, List
 from datetime import datetime
-from app.models.base import BaseModel
+from beanie import Indexed
+from pydantic import Field
+from app.models.base import BaseDocument
 
-class Business(BaseModel):
-    __tablename__ = "businesses"
 
-    business_name = Column(String, index=True, nullable=False)
-    category = Column(String, index=True, nullable=True)
-    website = Column(String, nullable=True)
-    phone = Column(String, nullable=True)
-    email = Column(String, nullable=True)
-    instagram = Column(String, nullable=True)
-    linkedin = Column(String, nullable=True)
-    facebook_url = Column(String, nullable=True)
-    city = Column(String, index=True, nullable=True)
-    state = Column(String, nullable=True)
-    country = Column(String, nullable=True)
-    google_rating = Column(Float, nullable=True)
-    review_count = Column(Integer, default=0)
-    
-    # Enrichment fields
-    website_status = Column(String, nullable=True)
-    logo_url = Column(String, nullable=True)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
-    last_checked = Column(DateTime, nullable=True)
-    source = Column(String, nullable=True)
-    confidence_score = Column(Float, nullable=True)
-    raw_data = Column(JSON, nullable=True)
+class Business(BaseDocument):
+    business_name: Indexed(str)
+    category: Optional[str] = None
+    website: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    instagram: Optional[str] = None
+    linkedin: Optional[str] = None
+    facebook_url: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    google_rating: Optional[float] = None
+    review_count: int = 0
+    website_status: Optional[str] = None
+    logo_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    last_checked: Optional[datetime] = None
+    source: Optional[str] = None
+    confidence_score: Optional[float] = None
+    raw_data: Optional[dict] = None
 
-    saved_leads = relationship("SavedLead", back_populates="business")
-    analysis = relationship("BusinessAnalysis", back_populates="business", uselist=False)
+    class Settings:
+        name = "businesses"
 
-class BusinessAnalysis(BaseModel):
-    __tablename__ = "business_analyses"
 
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id"), nullable=False, unique=True, index=True)
-    summary_short = Column(String, nullable=True)
-    summary_medium = Column(String, nullable=True)
-    summary_long = Column(String, nullable=True)
-    strengths = Column(JSON, default=[])
-    weaknesses = Column(JSON, default=[])
-    opportunities = Column(JSON, default=[])
-    opportunity_score = Column(Integer, nullable=True)
-    confidence_score = Column(Float, nullable=True)
-    ai_tags = Column(JSON, default=[])
-    estimated_budget = Column(String, nullable=True)
-    recommended_services = Column(JSON, default=[])
+class BusinessAnalysis(BaseDocument):
+    business_id: Indexed(str, unique=True)
+    summary_short: Optional[str] = None
+    summary_medium: Optional[str] = None
+    summary_long: Optional[str] = None
+    strengths: List[str] = []
+    weaknesses: List[str] = []
+    opportunities: List[str] = []
+    opportunity_score: Optional[int] = None
+    confidence_score: Optional[float] = None
+    ai_tags: List[str] = []
+    estimated_budget: Optional[str] = None
+    recommended_services: List[str] = []
 
-    business = relationship("Business", back_populates="analysis")
+    class Settings:
+        name = "business_analyses"
 
-class SearchHistory(BaseModel):
-    __tablename__ = "search_history"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    search_query = Column(String, index=True, nullable=False)
-    filters = Column(JSON, default={})
-    results_count = Column(Integer, default=0)
-    execution_time = Column(Float, default=0.0)
+class SearchHistory(BaseDocument):
+    user_id: Indexed(str)
+    search_query: str
+    filters: dict = {}
+    results_count: int = 0
+    execution_time: float = 0.0
 
-    user = relationship("User")
+    class Settings:
+        name = "search_history"
 
-class SavedLead(BaseModel):
-    __tablename__ = "saved_leads"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id"), nullable=False, index=True)
-    status = Column(String, default="new")
-    tags = Column(JSON, default=[])
-    notes = Column(String, nullable=True)
+class SavedLead(BaseDocument):
+    user_id: Indexed(str)
+    business_id: Indexed(str)
+    status: str = "new"
+    tags: List[str] = []
+    notes: Optional[str] = None
+    pipeline_stage: Optional[str] = None
 
-    user = relationship("User")
-    business = relationship("Business", back_populates="saved_leads")
-    conversations = relationship("Conversation", back_populates="lead", cascade="all, delete-orphan", primaryjoin="SavedLead.id == Conversation.lead_id")
-    tasks = relationship("Task", back_populates="lead", cascade="all, delete-orphan", primaryjoin="SavedLead.id == Task.lead_id")
-    timeline_events = relationship("TimelineEvent", back_populates="lead", cascade="all, delete-orphan", primaryjoin="SavedLead.id == TimelineEvent.lead_id")
+    class Settings:
+        name = "saved_leads"

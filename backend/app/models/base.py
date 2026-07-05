@@ -1,14 +1,18 @@
-import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Boolean, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from app.database.session import Base
+from typing import Optional
+from beanie import Document
+from pydantic import Field
 
-class BaseModel(Base):
-    __abstract__ = True
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    created_by = Column(UUID(as_uuid=True), nullable=True) # Will point to user ID
-    is_deleted = Column(Boolean, default=False)
+class BaseDocument(Document):
+    """
+    Base Beanie Document. Beanie automatically manages `id` as PydanticObjectId.
+    We store it as string for easy serialization.
+    """
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: Optional[str] = None
+    is_deleted: bool = False
+
+    class Settings:
+        use_revision = False

@@ -1,66 +1,49 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from typing import Any
-from app.api.deps import SessionDep, CurrentUser
+from app.api.deps import CurrentUser
 from app.schemas.ai import BusinessAnalysisResponse
 from app.core.config import settings
 from app.services.ai.provider import GeminiProvider
-from app.services.ai.analyzer import AIService
-from app.models.scout import BusinessAnalysis
+from app.models.scout import BusinessAnalysis, Business
 
 router = APIRouter()
 
-def get_ai_service(db: SessionDep) -> AIService:
+def get_ai_provider():
     if not settings.GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="AI Provider API key not configured")
-    provider = GeminiProvider(api_key=settings.GEMINI_API_KEY)
-    return AIService(provider=provider, db=db)
+    return GeminiProvider(api_key=settings.GEMINI_API_KEY)
 
 @router.post("/analyze/{business_id}", response_model=BusinessAnalysisResponse)
-def analyze_business(
-    business_id: str,
-    db: SessionDep,
-    current_user: CurrentUser,
-) -> Any:
-    """
-    Analyze a business using AI.
-    """
-    ai_service = get_ai_service(db)
+async def analyze_business(business_id: str, current_user: CurrentUser) -> Any:
+    business = await Business.find_one(Business.id == business_id)
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    existing = await BusinessAnalysis.find_one(BusinessAnalysis.business_id == business_id)
+    if existing:
+        return existing
+
     try:
-        analysis = ai_service.analyze_business(business_id=business_id, force_reanalyze=False)
+        provider = get_ai_provider()
+        from app.services.ai.analyzer import AIService
+        service = AIService(provider=provider)
+        analysis_data = service.analyze(business)
+        analysis = BusinessAnalysis(business_id=business_id, **analysis_data)
+        await analysis.insert()
         return analysis
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/reanalyze/{business_id}", response_model=BusinessAnalysisResponse)
-def reanalyze_business(
-    business_id: str,
-    db: SessionDep,
-    current_user: CurrentUser,
-) -> Any:
-    """
-    Force re-analyze a business.
-    """
-    ai_service = get_ai_service(db)
-    try:
-        analysis = ai_service.analyze_business(business_id=business_id, force_reanalyze=True)
-        return analysis
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def reanalyze_business(business_id: str, current_user: CurrentUser) -> Any:
+    existing = await BusinessAnalysis.find_one(BusinessAnalysis.business_id == business_id)
+    if existing:
+        await existing.delete()
+    return await analyze_business(business_id, current_user)
 
 @router.get("/business/{business_id}", response_model=BusinessAnalysisResponse)
-def get_business_analysis(
-    business_id: str,
-    db: SessionDep,
-    current_user: CurrentUser,
-) -> Any:
-    """
-    Get existing analysis for a business.
-    """
-    analysis = db.query(BusinessAnalysis).filter(BusinessAnalysis.business_id == business_id).first()
+async def get_business_analysis(business_id: str, current_user: CurrentUser) -> Any:
+    analysis = await BusinessAnalysis.find_one(BusinessAnalysis.business_id == business_id)
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis

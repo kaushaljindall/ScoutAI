@@ -1,51 +1,53 @@
-from sqlalchemy import Column, String, Text, ForeignKey, JSON, Boolean, DateTime, Float
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-from app.models.base import BaseModel
+from typing import Optional, List
 from datetime import datetime
+from beanie import Indexed
+from pydantic import Field
+from app.models.base import BaseDocument
 
-class Conversation(BaseModel):
-    __tablename__ = "conversations"
 
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("saved_leads.id"), nullable=False, index=True)
-    type = Column(String, nullable=False) # email, linkedin, whatsapp, meeting, call, note
-    message = Column(Text, nullable=False)
-    sender = Column(String, nullable=False) # user, lead, system
+class Conversation(BaseDocument):
+    lead_id: Indexed(str)
+    type: str  # email, linkedin, whatsapp, meeting, call, note
+    message: str
+    sender: str  # user, lead, system
+    sentiment: Optional[str] = None
+    interest_level: Optional[str] = None
+    buying_intent: Optional[str] = None
 
-    lead = relationship("SavedLead", back_populates="conversations")
-    analysis = relationship("AIConversationAnalysis", back_populates="conversation", uselist=False)
+    class Settings:
+        name = "conversations"
 
-class AIConversationAnalysis(BaseModel):
-    __tablename__ = "ai_conversation_analyses"
 
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, unique=True, index=True)
-    summary = Column(Text, nullable=True)
-    sentiment = Column(String, nullable=True)
-    interest_level = Column(String, nullable=True)
-    objections = Column(JSON, default=[])
-    buying_intent = Column(String, nullable=True)
-    next_action = Column(String, nullable=True)
-    confidence_score = Column(Float, nullable=True)
+class AIConversationAnalysis(BaseDocument):
+    conversation_id: Indexed(str, unique=True)
+    summary: Optional[str] = None
+    sentiment: Optional[str] = None
+    interest_level: Optional[str] = None
+    objections: List[str] = []
+    buying_intent: Optional[str] = None
+    next_action: Optional[str] = None
+    confidence_score: Optional[float] = None
 
-    conversation = relationship("Conversation", back_populates="analysis")
+    class Settings:
+        name = "ai_conversation_analyses"
 
-class Task(BaseModel):
-    __tablename__ = "tasks"
 
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("saved_leads.id"), nullable=False, index=True)
-    title = Column(String, nullable=False)
-    due_date = Column(DateTime, nullable=True)
-    completed = Column(Boolean, default=False)
-    type = Column(String, nullable=True) # call, email, meeting, custom
+class Task(BaseDocument):
+    lead_id: Indexed(str)
+    title: str
+    due_date: Optional[datetime] = None
+    completed: bool = False
+    type: Optional[str] = None  # call, email, meeting, custom
 
-    lead = relationship("SavedLead", back_populates="tasks")
+    class Settings:
+        name = "tasks"
 
-class TimelineEvent(BaseModel):
-    __tablename__ = "timeline_events"
 
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("saved_leads.id"), nullable=False, index=True)
-    event_type = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
-    metadata_json = Column(JSON, nullable=True)
+class TimelineEvent(BaseDocument):
+    lead_id: Indexed(str)
+    event_type: str
+    description: str
+    metadata_json: Optional[dict] = None
 
-    lead = relationship("SavedLead", back_populates="timeline_events")
+    class Settings:
+        name = "timeline_events"

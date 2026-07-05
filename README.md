@@ -41,7 +41,7 @@ cp .env.example .env
 # Edit .env with your PostgreSQL credentials and GEMINI_API_KEY
 
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8000
 ```
 
 ### Frontend Setup

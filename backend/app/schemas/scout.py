@@ -1,7 +1,8 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, List, Dict, Any
-from uuid import UUID
+from pydantic import BaseModel, ConfigDict, BeforeValidator
+from typing import Optional, List, Dict, Any, Annotated
 from datetime import datetime
+
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class BusinessBase(BaseModel):
     business_name: str
@@ -27,13 +28,13 @@ class BusinessBase(BaseModel):
     raw_data: Optional[Dict[str, Any]] = None
 
 class BusinessResponse(BusinessBase):
-    id: UUID
+    id: PyObjectId
     created_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class SavedLeadBase(BaseModel):
-    business_id: UUID
+    business_id: str
     status: str = "new"
     tags: List[str] = []
     notes: Optional[str] = None
@@ -42,13 +43,12 @@ class SavedLeadCreate(SavedLeadBase):
     pass
 
 class SavedLeadResponse(SavedLeadBase):
-    id: UUID
-    user_id: UUID
+    id: PyObjectId
+    user_id: PyObjectId
     created_at: datetime
     updated_at: datetime
-    business: BusinessResponse
-    
-    model_config = ConfigDict(from_attributes=True)
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class PaginatedBusinesses(BaseModel):
     items: List[BusinessResponse]

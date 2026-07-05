@@ -1,42 +1,53 @@
 from fastapi import APIRouter, HTTPException
 from typing import Any, List
-from app.api.deps import SessionDep, CurrentUser
+from app.api.deps import CurrentUser
 from app.schemas.copilot import (
     CopilotChatRequest, CopilotChatResponse, AIChatResponse,
     UserPreferenceBase, UserPreferenceResponse
 )
 from app.core.config import settings
 from app.services.ai.provider import GeminiProvider
-from app.services.copilot.engine import ContextEngine
-from app.services.copilot.manager import ChatRepository, PreferenceService
+from app.models.copilot import AIChat, AIMessage, UserPreferences
 
 router = APIRouter()
 
-def get_engine(db: SessionDep):
+def get_ai_provider():
     if not settings.GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="AI Provider API key not configured")
-    provider = GeminiProvider(api_key=settings.GEMINI_API_KEY)
-    return ContextEngine(provider=provider, db=db)
+    return GeminiProvider(api_key=settings.GEMINI_API_KEY)
 
 @router.post("/chat", response_model=CopilotChatResponse)
-def chat(request: CopilotChatRequest, db: SessionDep, current_user: CurrentUser):
-    engine = get_engine(db)
+async def chat(request: CopilotChatRequest, current_user: CurrentUser):
     try:
-        return engine.process_chat(current_user.id, request)
+        provider = get_ai_provider()
+        from app.services.copilot.engine import ContextEngine
+        engine = ContextEngine(provider=provider)
+        return await engine.process_chat(str(current_user.id), request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/history", response_model=List[AIChatResponse])
-def get_chat_history(db: SessionDep, current_user: CurrentUser):
-    repo = ChatRepository(db)
-    return repo.get_user_chats(current_user.id)
+async def get_chat_history(current_user: CurrentUser):
+    chats = await AIChat.find(
+        AIChat.user_id == str(current_user.id),
+        AIChat.is_deleted == False
+    ).sort("-created_at").to_list()
+    return chats
 
 @router.get("/preferences", response_model=UserPreferenceResponse)
-def get_preferences(db: SessionDep, current_user: CurrentUser):
-    service = PreferenceService(db)
-    return service.get_preferences(current_user.id)
+async def get_preferences(current_user: CurrentUser):
+    prefs = await UserPreferences.find_one(UserPreferences.user_id == str(current_user.id))
+    if not prefs:
+        prefs = UserPreferences(user_id=str(current_user.id))
+        await prefs.insert()
+    return prefs
 
 @router.put("/preferences", response_model=UserPreferenceResponse)
-def update_preferences(prefs: UserPreferenceBase, db: SessionDep, current_user: CurrentUser):
-    service = PreferenceService(db)
-    return service.update_preferences(current_user.id, prefs)
+async def update_preferences(prefs_in: UserPreferenceBase, current_user: CurrentUser):
+    prefs = await UserPreferences.find_one(UserPreferences.user_id == str(current_user.id))
+    if not prefs:
+        prefs = UserPreferences(user_id=str(current_user.id))
+    for k, v in prefs_in.model_dump(exclude_unset=True).items():
+        setattr(prefs, k, v)
+    await prefs.save()
+    return prefs

@@ -1,41 +1,36 @@
-from sqlalchemy import Column, String, Text, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-from app.models.base import BaseModel
+from typing import Optional, List
+from beanie import Indexed
+from pydantic import Field
+from app.models.base import BaseDocument
 
-class MessageTemplate(BaseModel):
-    __tablename__ = "message_templates"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    title = Column(String, nullable=False)
-    type = Column(String, nullable=False) # e.g., email, linkedin, whatsapp
-    tone = Column(String, nullable=False)
-    language = Column(String, nullable=False)
-    template = Column(Text, nullable=False)
-    is_favorite = Column(String, nullable=True) # boolean string or generic metadata
+class MessageTemplate(BaseDocument):
+    user_id: Indexed(str)
+    title: str
+    type: str  # email, linkedin, whatsapp
+    tone: str
+    language: str
+    template: str
+    is_favorite: bool = False
 
-    user = relationship("User")
+    class Settings:
+        name = "message_templates"
 
-class GeneratedMessage(BaseModel):
-    __tablename__ = "generated_messages"
 
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id"), nullable=False, index=True)
-    template_id = Column(UUID(as_uuid=True), ForeignKey("message_templates.id"), nullable=True)
-    message_type = Column(String, nullable=False)
-    tone = Column(String, nullable=False)
-    language = Column(String, nullable=False)
-    ai_version = Column(String, nullable=False) # Version A, B, C
-    
-    # Structured JSON
-    opening = Column(Text, nullable=True)
-    observation = Column(Text, nullable=True)
-    value_proposition = Column(Text, nullable=True)
-    cta = Column(Text, nullable=True)
-    closing = Column(Text, nullable=True)
-    full_message = Column(Text, nullable=False)
-    
-    # Context
-    ai_suggestions = Column(JSON, nullable=True) # Best time, channel, pain points
+class GeneratedMessage(BaseDocument):
+    business_id: Indexed(str)
+    template_id: Optional[str] = None
+    message_type: str
+    tone: str
+    language: str
+    ai_version: str  # Version A, B, C
+    opening: Optional[str] = None
+    observation: Optional[str] = None
+    value_proposition: Optional[str] = None
+    cta: Optional[str] = None
+    closing: Optional[str] = None
+    full_message: str
+    ai_suggestions: Optional[dict] = None
 
-    business = relationship("Business")
-    template = relationship("MessageTemplate")
+    class Settings:
+        name = "generated_messages"
