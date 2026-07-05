@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, scout
+from app.api.routes import auth, scout, ai
 from app.core.config import settings
 
 app = FastAPI(
@@ -19,6 +19,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(scout.router, prefix="/api/v1/scout", tags=["scout"])
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
 
 @app.get("/health")
 def health_check():

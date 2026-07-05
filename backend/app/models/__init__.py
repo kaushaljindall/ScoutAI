@@ -1,5 +1,5 @@
 from app.models.base import BaseModel
 from app.models.user import User, Settings, AuditLog, RefreshToken, PasswordResetToken
-from app.models.scout import Business, SavedLead, SearchHistory
+from app.models.scout import Business, SavedLead, SearchHistory, BusinessAnalysis
 
-__all__ = ["BaseModel", "User", "Settings", "AuditLog", "RefreshToken", "PasswordResetToken", "Business", "SavedLead", "SearchHistory"]
+__all__ = ["BaseModel", "User", "Settings", "AuditLog", "RefreshToken", "PasswordResetToken", "Business", "SavedLead", "SearchHistory", "BusinessAnalysis"]

@@ -32,6 +32,25 @@ class Business(BaseModel):
     raw_data = Column(JSON, nullable=True)
 
     saved_leads = relationship("SavedLead", back_populates="business")
+    analysis = relationship("BusinessAnalysis", back_populates="business", uselist=False)
+
+class BusinessAnalysis(BaseModel):
+    __tablename__ = "business_analyses"
+
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id"), nullable=False, unique=True, index=True)
+    summary_short = Column(String, nullable=True)
+    summary_medium = Column(String, nullable=True)
+    summary_long = Column(String, nullable=True)
+    strengths = Column(JSON, default=[])
+    weaknesses = Column(JSON, default=[])
+    opportunities = Column(JSON, default=[])
+    opportunity_score = Column(Integer, nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    ai_tags = Column(JSON, default=[])
+    estimated_budget = Column(String, nullable=True)
+    recommended_services = Column(JSON, default=[])
+
+    business = relationship("Business", back_populates="analysis")
 
 class SearchHistory(BaseModel):
     __tablename__ = "search_history"

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useScoutStore } from '@/store/scoutStore';
 import { useGetBusiness } from '@/hooks/useScout';
-import { X, ExternalLink, Mail, Phone, MapPin, Building, Star, Globe, Briefcase, MessageSquare } from 'lucide-react';
+import { useGetBusinessAnalysis, useAnalyzeBusiness } from '@/hooks/useAI';
+import { X, ExternalLink, Mail, Phone, MapPin, Building, Star, Globe, Briefcase, MessageSquare, Sparkles, TrendingUp, AlertCircle, Target, CheckCircle2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,11 +10,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const LeadDrawer = () => {
   const { selectedLeadId, isDrawerOpen, setIsDrawerOpen, setSelectedLeadId } = useScoutStore();
   const { data: business, isLoading } = useGetBusiness(selectedLeadId);
+  const { data: aiData } = useGetBusinessAnalysis(selectedLeadId);
+  const analyzeMutation = useAnalyzeBusiness();
   const [activeTab, setActiveTab] = useState('overview');
+  const [aiStatus, setAiStatus] = useState('');
+
+  const handleAnalyze = () => {
+    if (!selectedLeadId) return;
+    setAiStatus('Analyzing Business...');
+    setTimeout(() => setAiStatus('Understanding Website...'), 1500);
+    setTimeout(() => setAiStatus('Generating Insights...'), 3500);
+    setTimeout(() => setAiStatus('Almost Done...'), 6000);
+    
+    analyzeMutation.mutate(selectedLeadId, {
+      onSettled: () => setAiStatus(''),
+      onSuccess: () => setActiveTab('ai_analysis')
+    });
+  };
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'contact', label: 'Contact' },
+    { id: 'ai_analysis', label: 'AI Analysis' },
     { id: 'website', label: 'Website' },
     { id: 'social', label: 'Social' },
     { id: 'notes', label: 'Notes' },
@@ -74,6 +92,16 @@ export const LeadDrawer = () => {
                       <span>•</span>
                       <span className="flex items-center gap-1"><MapPin size={12} /> {business?.city || 'Unknown Location'}</span>
                     </div>
+                    {/* Quick AI Tags if analyzed */}
+                    {aiData && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {aiData.ai_tags.map(tag => (
+                          <span key={tag} className="text-[10px] font-medium bg-accent/10 text-accent px-1.5 py-0.5 rounded border border-accent/20">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -98,17 +126,26 @@ export const LeadDrawer = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "px-1 py-3 text-sm font-medium border-b-2 whitespace-nowrap mr-6 transition-colors",
-                    activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-primary/50 hover:text-primary/80"
+                    "px-1 py-3 text-sm font-medium border-b-2 whitespace-nowrap mr-6 transition-colors flex items-center gap-1.5",
+                    activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-primary/50 hover:text-primary/80",
+                    tab.id === 'ai_analysis' && "text-accent border-accent/50 hover:text-accent-hover"
                   )}
                 >
+                  {tab.id === 'ai_analysis' && <Sparkles size={14} />}
                   {tab.label}
                 </button>
               ))}
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 bg-surface/10">
+            <div className="flex-1 overflow-y-auto p-6 bg-surface/10 relative">
+              {analyzeMutation.isPending && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+                  <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4" />
+                  <p className="font-medium text-lg text-accent animate-pulse">{aiStatus}</p>
+                </div>
+              )}
+              
               {isLoading ? (
                 <div className="space-y-6">
                   {Array.from({ length: 3 }).map((_, i) => (
@@ -119,19 +156,36 @@ export const LeadDrawer = () => {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-8 pb-10">
                   {/* Overview Tab */}
                   <div className={cn("space-y-6", activeTab === 'overview' ? 'block' : 'hidden')}>
-                    {/* Placeholder for AI Analysis */}
-                    <div className="p-4 rounded-xl bg-accent/5 border border-accent/20 relative overflow-hidden">
-                      <div className="absolute -right-4 -top-4 w-24 h-24 bg-accent/10 rounded-full blur-xl pointer-events-none" />
-                      <h4 className="text-xs font-semibold text-accent uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Star size={12} className="fill-accent text-accent" /> AI Overview
-                      </h4>
-                      <p className="text-sm text-primary/70 leading-relaxed font-mono">
-                        Analysis pending... (This section will be powered by Scout Engine in Phase 3 to generate insights from website and social data).
-                      </p>
-                    </div>
+                    {!aiData ? (
+                      <div className="p-6 rounded-xl bg-accent/5 border border-accent/20 relative overflow-hidden flex flex-col items-center text-center">
+                        <div className="absolute -right-4 -top-4 w-32 h-32 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+                        <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mb-3">
+                          <Zap size={24} className="text-accent" />
+                        </div>
+                        <h4 className="font-semibold text-lg mb-1">Generate AI Insights</h4>
+                        <p className="text-sm text-primary/60 mb-4 max-w-xs">
+                          Let Scout Engine analyze this business to uncover strengths, weaknesses, and potential services you can offer.
+                        </p>
+                        <Button onClick={handleAnalyze} className="gap-2 bg-accent text-background hover:bg-accent-hover">
+                          <Sparkles size={14} /> Analyze Business
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="p-5 rounded-xl bg-accent/5 border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors" onClick={() => setActiveTab('ai_analysis')}>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-xs font-semibold text-accent uppercase tracking-wider flex items-center gap-1.5">
+                            <Star size={12} className="fill-accent text-accent" /> AI Overview Available
+                          </h4>
+                          <span className="text-xs text-primary/50">Click to view details</span>
+                        </div>
+                        <p className="text-sm text-primary/80 leading-relaxed font-medium">
+                          {aiData.summary_short}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 rounded-lg border border-border/50 bg-background">
@@ -143,6 +197,89 @@ export const LeadDrawer = () => {
                         <p className="font-semibold text-lg">{business?.review_count || '0'}</p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* AI Analysis Tab */}
+                  <div className={cn("space-y-6", activeTab === 'ai_analysis' ? 'block' : 'hidden')}>
+                    {!aiData && !analyzeMutation.isPending && (
+                       <div className="text-center p-8">
+                         <p className="text-primary/60 mb-4">No AI analysis available for this business yet.</p>
+                         <Button onClick={handleAnalyze} className="gap-2 bg-accent text-background hover:bg-accent-hover">
+                           <Sparkles size={14} /> Generate Analysis
+                         </Button>
+                       </div>
+                    )}
+
+                    {aiData && (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 rounded-xl border border-border/50 bg-background flex flex-col justify-between">
+                            <p className="text-xs text-primary/50 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5"><Target size={14} className="text-emerald-500" /> Opportunity Score</p>
+                            <div className="flex items-end gap-2">
+                              <span className={cn("text-4xl font-bold tracking-tighter", 
+                                aiData.opportunity_score >= 80 ? 'text-emerald-500' : 
+                                aiData.opportunity_score >= 50 ? 'text-yellow-500' : 'text-red-500'
+                              )}>
+                                {aiData.opportunity_score}
+                              </span>
+                              <span className="text-sm text-primary/40 mb-1">/ 100</span>
+                            </div>
+                          </div>
+                          <div className="p-4 rounded-xl border border-border/50 bg-background flex flex-col justify-between">
+                            <p className="text-xs text-primary/50 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5"><TrendingUp size={14} className="text-blue-500" /> Est. Budget</p>
+                            <span className="text-2xl font-bold tracking-tight">{aiData.estimated_budget}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-lg flex items-center gap-2"><Sparkles size={16} className="text-accent" /> AI Business Summary</h3>
+                          <div className="p-4 rounded-lg border border-border/50 bg-background text-sm text-primary/80 leading-relaxed space-y-4">
+                            <p>{aiData.summary_medium}</p>
+                            <p className="text-primary/60">{aiData.summary_long}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-lg flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500" /> Recommended Services</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {aiData.recommended_services.map(service => (
+                              <div key={service} className="px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-500 text-sm font-medium">
+                                {service}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-sm flex items-center gap-1.5 text-emerald-500"><TrendingUp size={14} /> Strengths & Opportunities</h3>
+                            <div className="p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 space-y-2">
+                              {aiData.strengths.map((str, i) => (
+                                <p key={i} className="text-sm flex items-start gap-2">
+                                  <span className="text-emerald-500 mt-0.5">•</span> {str}
+                                </p>
+                              ))}
+                              {aiData.opportunities.map((opp, i) => (
+                                <p key={i} className="text-sm flex items-start gap-2">
+                                  <span className="text-emerald-500 mt-0.5">•</span> {opp}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <h3 className="font-semibold text-sm flex items-center gap-1.5 text-red-500"><AlertCircle size={14} /> Weaknesses</h3>
+                            <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/5 space-y-2 h-full">
+                              {aiData.weaknesses.map((wk, i) => (
+                                <p key={i} className="text-sm flex items-start gap-2">
+                                  <span className="text-red-500 mt-0.5">•</span> {wk}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Contact Tab */}
