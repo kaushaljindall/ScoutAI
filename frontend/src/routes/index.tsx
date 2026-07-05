@@ -15,6 +15,7 @@ import ScoutPage from '@/pages/dashboard/ScoutPage';
 import OutreachPage from '@/pages/dashboard/OutreachPage';
 import CRMPage from '@/pages/dashboard/CRMPage';
 import LeadCRMPage from '@/pages/dashboard/LeadCRMPage';
+import CopilotPage from '@/pages/dashboard/CopilotPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
       {
         path: 'crm/:id',
         element: <LeadCRMPage />,
+      },
+      {
+        path: 'copilot',
+        element: <CopilotPage />,
       },
     ],
   },
