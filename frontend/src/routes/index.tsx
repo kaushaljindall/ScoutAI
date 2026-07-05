@@ -19,6 +19,7 @@ import CopilotPage from '@/pages/dashboard/CopilotPage';
 import DocumentsPage from '@/pages/dashboard/DocumentsPage';
 import DocumentEditorPage from '@/pages/dashboard/DocumentEditorPage';
 import AnalyticsPage from '@/pages/dashboard/AnalyticsPage';
+import SettingsPage from '@/pages/dashboard/SettingsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -97,6 +98,10 @@ export const router = createBrowserRouter([
       {
         path: 'analytics',
         element: <AnalyticsPage />,
+      },
+      {
+        path: 'settings',
+        element: <SettingsPage />,
       },
     ],
   },
