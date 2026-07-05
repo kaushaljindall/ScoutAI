@@ -6,9 +6,11 @@ import { X, ExternalLink, Mail, Phone, MapPin, Building, Star, Globe, Briefcase,
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 export const LeadDrawer = () => {
   const { selectedLeadId, isDrawerOpen, setIsDrawerOpen, setSelectedLeadId } = useScoutStore();
+  const navigate = useNavigate();
   const { data: business, isLoading } = useGetBusiness(selectedLeadId);
   const { data: aiData } = useGetBusinessAnalysis(selectedLeadId);
   const analyzeMutation = useAnalyzeBusiness();
@@ -116,7 +118,17 @@ export const LeadDrawer = () => {
             {/* Quick Actions */}
             <div className="px-6 py-3 border-b border-border/50 bg-background flex gap-2">
               <Button size="sm" className="flex-1 gap-2"><Briefcase size={14} /> Save Lead</Button>
-              <Button size="sm" variant="outline" className="flex-1 gap-2"><MessageSquare size={14} /> Draft Email</Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1 gap-2"
+                onClick={() => {
+                  closeDrawer();
+                  navigate(`/dashboard/outreach/${selectedLeadId}`);
+                }}
+              >
+                <MessageSquare size={14} /> Draft Email
+              </Button>
             </div>
 
             {/* Tabs */}

@@ -12,6 +12,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import ScoutPage from '@/pages/dashboard/ScoutPage';
+import OutreachPage from '@/pages/dashboard/OutreachPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -62,6 +63,10 @@ export const router = createBrowserRouter([
       {
         path: 'scout',
         element: <ScoutPage />,
+      },
+      {
+        path: 'outreach/:id',
+        element: <OutreachPage />,
       },
     ],
   },
