@@ -30,8 +30,8 @@ api.interceptors.response.use(
         const refreshToken = useAuthStore.getState().refreshToken;
         if (!refreshToken) throw new Error('No refresh token available');
         
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/refresh`, null, {
-          params: { refresh_token: refreshToken }
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/refresh`, {
+          refresh_token: refreshToken
         });
         
         const { access_token, refresh_token: new_refresh_token } = response.data;

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useForgotPassword } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -15,19 +16,29 @@ type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const forgotPasswordMutation = useForgotPassword();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
   });
 
-  const onSubmit = async (_data: ForgotPasswordValues) => {
-    // In a real application, call the password reset API here
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSuccess(true);
+  const onSubmit = (_data: ForgotPasswordValues) => {
+    setError(null);
+    forgotPasswordMutation.mutate(_data, {
+      onSuccess: () => {
+        setSuccess(true);
+      },
+      onError: () => {
+        // We still show success to prevent email enumeration
+        setSuccess(true);
+      }
+    });
   };
 
   return (
@@ -42,7 +53,7 @@ export default function ForgotPasswordPage() {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
             <div>
               <p className="font-medium">Check your email</p>
-              <p className="text-sm opacity-80 mt-1">We've sent a password reset link to your email address.</p>
+              <p className="text-sm opacity-80 mt-1">If an account exists, you will receive reset instructions.</p>
             </div>
           </div>
         ) : (
@@ -57,7 +68,9 @@ export default function ForgotPasswordPage() {
               />
             </div>
             
-            <Button type="submit" className="w-full mt-4" isLoading={isSubmitting}>
+            {error && <div className="text-sm font-medium text-red-500 bg-red-500/10 p-3 rounded-md">{error}</div>}
+            
+            <Button type="submit" className="w-full mt-4" isLoading={forgotPasswordMutation.isPending}>
               Send Reset Link
             </Button>
           </form>

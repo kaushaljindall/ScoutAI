@@ -1,15 +1,19 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
+import { useLogout } from '@/hooks/useAuth';
 
 export default function DashboardLayout() {
-  const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
+  const logoutMutation = useLogout();
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    logoutMutation.mutate(undefined, {
+      onSettled: () => {
+        navigate('/login');
+      }
+    });
   };
 
   return (
