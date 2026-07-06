@@ -56,3 +56,16 @@ class PaginatedBusinesses(BaseModel):
     page: int
     size: int
     pages: int
+
+class DiscoverRequest(BaseModel):
+    query: str
+    location: Optional[str] = None
+    max_results: int = 5
+    filters: Optional[Dict] = None
+
+class DiscoverResponse(BaseModel):
+    status: str
+    message: str
+    results: List[BusinessResponse]
+    intent: Optional[Dict] = None
+

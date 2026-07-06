@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pydantic import ValidationError
+from beanie import PydanticObjectId
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.user import TokenPayload
@@ -21,11 +22,23 @@ async def get_current_user(token: TokenDep) -> User:
         token_data = TokenPayload(**payload)
     except (JWTError, ValidationError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    user = await User.find_one(User.id == token_data.sub, User.is_deleted == False)
-    if not user:
+
+    try:
+        user_id = PydanticObjectId(token_data.sub)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Use .get() which queries by _id directly — most reliable Beanie method
+    user = await User.get(user_id)
+    if not user or user.is_deleted:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")

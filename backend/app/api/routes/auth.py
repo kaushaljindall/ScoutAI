@@ -18,10 +18,10 @@ async def log_audit(action: str, user_id: str = None, entity: str = None, entity
 
 @router.post("/register", response_model=UserResponse)
 async def register(user_in: UserCreate) -> Any:
-    existing = await User.find_one(User.email == user_in.email, User.is_deleted == False)
+    existing = await User.find_one({"email": user_in.email, "is_deleted": False})
     if existing:
         raise HTTPException(status_code=400, detail="The user with this email already exists.")
-    
+
     user = User(
         email=user_in.email,
         password_hash=security.get_password_hash(user_in.password),
@@ -33,7 +33,7 @@ async def register(user_in: UserCreate) -> Any:
 
 @router.post("/login", response_model=Token)
 async def login_access_token(form_data: OAuth2PasswordRequestForm = Depends()) -> Any:
-    user = await User.find_one(User.email == form_data.username, User.is_deleted == False)
+    user = await User.find_one({"email": form_data.username, "is_deleted": False})
     if not user or not security.verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     if not user.is_active:
@@ -66,7 +66,11 @@ async def refresh_token(request: RefreshTokenRequest) -> Any:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Could not validate credentials")
 
     db_token = await RefreshToken.find_one(RefreshToken.token == request.refresh_token, RefreshToken.revoked == False)
-    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+    if not db_token:
+        raise HTTPException(status_code=401, detail="Refresh token expired or invalid")
+        
+    token_expiry = db_token.expires_at.replace(tzinfo=timezone.utc) if db_token.expires_at.tzinfo is None else db_token.expires_at
+    if token_expiry < datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Refresh token expired or invalid")
 
     user = await User.find_one(User.id == user_id, User.is_deleted == False)

@@ -36,14 +36,16 @@ async def search_businesses(
 
 @router.get("/business/{id}", response_model=BusinessResponse)
 async def get_business(id: str, current_user: CurrentUser) -> Any:
-    business = await Business.find_one(Business.id == id, Business.is_deleted == False)
+    from beanie import PydanticObjectId
+    business = await Business.get(PydanticObjectId(id))
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
     return business
 
 @router.post("/save", response_model=SavedLeadResponse)
 async def save_lead(lead_in: SavedLeadCreate, current_user: CurrentUser) -> Any:
-    business = await Business.find_one(Business.id == lead_in.business_id)
+    from beanie import PydanticObjectId
+    business = await Business.get(PydanticObjectId(lead_in.business_id))
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
 
@@ -80,8 +82,8 @@ async def delete_leads(ids: List[str], current_user: CurrentUser) -> Any:
             await lead.save()
     return {"message": f"Successfully deleted {len(ids)} leads"}
 
-@router.get("/leads", response_model=List[SavedLeadResponse])
-async def get_leads(current_user: CurrentUser) -> Any:
+@router.get("/saved", response_model=List[SavedLeadResponse])
+async def get_saved_leads(current_user: CurrentUser) -> Any:
     leads = await SavedLead.find(
         SavedLead.user_id == str(current_user.id),
         SavedLead.is_deleted == False
@@ -101,3 +103,55 @@ async def refresh_business(id: str, current_user: CurrentUser) -> Any:
 @router.post("/export")
 async def export_leads(current_user: CurrentUser) -> Any:
     return Response(content="id,business_name,email\n1,Test,test@test.com", media_type="text/csv")
+
+from app.schemas.scout import DiscoverRequest, DiscoverResponse
+from app.services.discovery.orchestrator import ScoutAgentOrchestrator
+
+@router.post("/discover", response_model=DiscoverResponse)
+async def discover_businesses(
+    request: DiscoverRequest,
+    current_user: CurrentUser
+) -> Any:
+    """
+    Trigger the real-time Scout AI Agent.
+    It automatically infers intent, searches, crawls, dedups and analyzes.
+    """
+    agent = ScoutAgentOrchestrator(str(current_user.id))
+    result = await agent.execute_agent(raw_query=request.query)
+    return result
+
+from fastapi.responses import StreamingResponse
+
+@router.get("/discover/stream")
+async def stream_discover(query: str, current_user: CurrentUser) -> Any:
+    """
+    Stream the execution progress of the LangGraph multi-agent system using SSE.
+    """
+    from app.search.agent import build_scout_graph
+    import json
+    import asyncio
+    
+    graph = build_scout_graph()
+    
+    async def event_generator():
+        state = {"user_id": str(current_user.id), "query": query, "status": "running", "progress": [], "errors": [], "search_queries": [], "raw_urls": [], "unique_urls": [], "crawled_data": [], "analyzed_businesses": [], "saved_business_ids": []}
+        
+        try:
+            # Run LangGraph streaming
+            async for output in graph.astream(state):
+                # LangGraph yields a dict with node name as key and state delta as value
+                node_name = list(output.keys())[0]
+                node_state = output[node_name]
+                
+                # Check what progress items were added
+                if "progress" in node_state:
+                    # Stream the latest progress
+                    for msg in node_state["progress"]:
+                        yield f"data: {json.dumps({'status': 'progress', 'message': msg})}\n\n"
+                        
+            # After complete
+            yield f"data: {json.dumps({'status': 'completed', 'message': 'Completed successfully'})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'status': 'error', 'message': str(e)})}\n\n"
+            
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

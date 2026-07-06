@@ -3,6 +3,9 @@ import { useDiscoverBusinesses } from '@/hooks/useScout';
 import { Search, Filter, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
+import { useQueryClient } from '@tanstack/react-query';
+import { scoutService } from '@/services/scoutService';
+
 const smartFiltersOptions = [
   { id: 'high_opportunity', label: '⭐ High Opportunity' },
   { id: 'instagram_active', label: '📱 Instagram Active' },
@@ -19,26 +22,40 @@ const industries = ['Healthcare', 'Restaurants', 'Real Estate', 'Education', 'Ma
 export const ScoutFilters = () => {
   const { filters, setFilters, resetFilters, setIsDiscovering, setDiscoveryStatus } = useScoutStore();
   const discoverMutation = useDiscoverBusinesses();
+  
+  const queryClient = useQueryClient();
 
-  const handleDiscover = () => {
+  const handleDiscover = async () => {
     if (!filters.q) return;
     setIsDiscovering(true);
-    setDiscoveryStatus('Discovering Businesses...');
-    
-    // Simulate steps for UI
-    setTimeout(() => setDiscoveryStatus('Normalizing & Validating Data...'), 1500);
-    setTimeout(() => setDiscoveryStatus('Removing Duplicates...'), 3000);
-    setTimeout(() => setDiscoveryStatus('Saving Results...'), 4500);
+    setDiscoveryStatus('Starting Agent...');
 
-    discoverMutation.mutate(
-      { query: filters.q, location: filters.city, max_results: 10 },
-      {
-        onSettled: () => {
-          setIsDiscovering(false);
-          setDiscoveryStatus('');
+    try {
+      const stream = scoutService.discoverStream(filters.q);
+      for await (const event of stream) {
+        if (event.status === 'progress') {
+          setDiscoveryStatus(event.message);
+        } else if (event.status === 'completed') {
+          setDiscoveryStatus('Completed!');
+          break;
+        } else if (event.status === 'error') {
+          setDiscoveryStatus(`Error: ${event.message}`);
+          break;
         }
       }
-    );
+      
+      // Invalidate to refresh the table
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['scout'] });
+        setIsDiscovering(false);
+        setDiscoveryStatus('');
+      }, 1000);
+      
+    } catch (err) {
+      console.error(err);
+      setIsDiscovering(false);
+      setDiscoveryStatus('');
+    }
   };
 
   const toggleSmartFilter = (id: string) => {

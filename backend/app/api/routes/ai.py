@@ -15,7 +15,8 @@ def get_ai_provider():
 
 @router.post("/analyze/{business_id}", response_model=BusinessAnalysisResponse)
 async def analyze_business(business_id: str, current_user: CurrentUser) -> Any:
-    business = await Business.find_one(Business.id == business_id)
+    from beanie import PydanticObjectId
+    business = await Business.get(PydanticObjectId(business_id))
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
 
@@ -27,7 +28,7 @@ async def analyze_business(business_id: str, current_user: CurrentUser) -> Any:
         provider = get_ai_provider()
         from app.services.ai.analyzer import AIService
         service = AIService(provider=provider)
-        analysis_data = service.analyze(business)
+        analysis_data = await service.analyze(business)
         analysis = BusinessAnalysis(business_id=business_id, **analysis_data)
         await analysis.insert()
         return analysis

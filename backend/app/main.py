@@ -30,18 +30,13 @@ async def shutdown():
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-CORS_ORIGINS = (
-    ["*"] if settings.ENVIRONMENT == "development"
-    else [settings.FRONTEND_URL]
-)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=[settings.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
 @app.middleware("http")
@@ -52,18 +47,7 @@ async def security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Global exception: {str(exc)}", exc_info=True)
-    origin = request.headers.get("origin", "")
-    response = JSONResponse(
-        status_code=500,
-        content={"detail": "An internal server error occurred. Our team has been notified."}
-    )
-    if settings.ENVIRONMENT == "development" or origin == settings.FRONTEND_URL:
-        response.headers["Access-Control-Allow-Origin"] = origin or "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
+
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(scout.router, prefix="/api/v1/scout", tags=["scout"])

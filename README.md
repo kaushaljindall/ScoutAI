@@ -38,9 +38,8 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your PostgreSQL credentials and GEMINI_API_KEY
+# Edit .env with your MongoDB Atlas URI and GEMINI_API_KEY
 
-alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 

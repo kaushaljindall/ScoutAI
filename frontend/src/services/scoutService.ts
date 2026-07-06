@@ -64,6 +64,51 @@ export const scoutService = {
     return response.data;
   },
 
+  discoverStream: async function* (query: string) {
+    let token = '';
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        token = parsed.state?.accessToken || '';
+      }
+    } catch (e) {}
+
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+    const response = await fetch(`${baseUrl}/scout/discover/stream?query=${encodeURIComponent(query)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Stream failed with status ${response.status}`);
+    }
+
+    if (!response.body) throw new Error("No body");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.substring(6));
+            yield data;
+          } catch (e) {
+            // ignore parse errors for partial chunks
+          }
+        }
+      }
+    }
+  },
+
   getSavedLeads: async () => {
     const response = await api.get('/scout/saved');
     return response.data;
