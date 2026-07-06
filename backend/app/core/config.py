@@ -27,6 +27,16 @@ class Settings(BaseSettings):
     # AI Config
     GEMINI_API_KEY: str = ""
 
+    # Search Provider Config
+    SEARXNG_BASE_URL: str = "https://searxng.site"
+    BRAVE_API_KEY: str = ""
+    GOOGLE_PLACES_API_KEY: str = ""
+
+    # Search Settings
+    SEARCH_CACHE_TTL_SECONDS: int = 900  # 15 minutes
+    SEARCH_PROVIDER_TIMEOUT: int = 15    # seconds per provider
+    SEARCH_MAX_RESULTS_PER_PROVIDER: int = 20
+
     model_config = {
         "env_file": ".env",
         "case_sensitive": True,

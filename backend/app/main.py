@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from app.api.routes import auth, scout, ai, outreach, crm, copilot, documents, analytics
+from app.api.routes import auth, scout, ai, outreach, crm, copilot, documents, analytics, agent, discovery, validation
 from app.core.config import settings
 from app.database.session import connect_db, disconnect_db
 import logging
@@ -18,15 +18,23 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json" if settings.ENVIRONMENT != "production" else None
 )
 
+from app.events.bus import event_bus
+from app.tools.providers.placeholders import register_placeholders
+
 @app.on_event("startup")
 async def startup():
     await connect_db()
     logger.info("Connected to MongoDB")
+    # Initialize Agentic system
+    event_bus.start()
+    register_placeholders()
+    logger.info("Agentic Event Bus and Tools initialized")
 
 @app.on_event("shutdown")
 async def shutdown():
+    await event_bus.stop()
     await disconnect_db()
-    logger.info("Disconnected from MongoDB")
+    logger.info("Disconnected from MongoDB and stopped Event Bus")
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -57,6 +65,9 @@ app.include_router(crm.router, prefix="/api/v1/crm", tags=["crm"])
 app.include_router(copilot.router, prefix="/api/v1/copilot", tags=["copilot"])
 app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["analytics"])
+app.include_router(agent.router, prefix="/api/v1", tags=["agent"])
+app.include_router(discovery.router, prefix="/api/v1", tags=["search"])
+app.include_router(validation.router, prefix="/api/v1", tags=["validation"])
 
 @app.get("/health")
 async def health_check():

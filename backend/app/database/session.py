@@ -28,6 +28,7 @@ async def connect_db():
         from app.models.copilot import AIChat, AIMessage, UserPreferences, Branding
         from app.models.documents import Document, DocumentTemplate
         from app.models.analytics import Goal, AnalyticsEvent, Report
+        from app.models.validation import ValidatedBusiness
 
         await init_beanie(
             database=_client[settings.MONGODB_DB_NAME],
@@ -38,7 +39,7 @@ async def connect_db():
                 Conversation, Task, TimelineEvent, AIConversationAnalysis,
                 AIChat, AIMessage, UserPreferences, Branding,
                 Document, DocumentTemplate,
-                Goal, AnalyticsEvent, Report,
+                Goal, AnalyticsEvent, Report, ValidatedBusiness
             ]
         )
         logger.info(f"✅ Connected to MongoDB: {settings.MONGODB_DB_NAME}")

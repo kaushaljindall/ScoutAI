@@ -1,64 +1,211 @@
-import { useSearchBusinesses } from '@/hooks/useScout';
-import { useScoutStore } from '@/store/scoutStore';
-import { ScoutFilters } from '@/components/scout/ScoutFilters';
-import { ScoutTable } from '@/components/scout/ScoutTable';
-import { LeadDrawer } from '@/components/scout/LeadDrawer';
+import React, { useState, useRef, useCallback } from 'react';
+import { Search, Zap, Clock, X } from 'lucide-react';
+import {
+  discoveryService,
+} from '@/services/discoveryService';
+import type {
+  DiscoveredBusiness,
+  ProviderStatus,
+} from '@/services/discoveryService';
+import { SearchProviderPanel } from '@/features/discovery/components/SearchProviderPanel';
+import { SearchProgressCard } from '@/features/discovery/components/SearchProgressCard';
+import { DiscoveryResultsTable } from '@/features/discovery/components/DiscoveryResultsTable';
+
+type SearchStage = 'idle' | 'planning' | 'running' | 'merging' | 'completed';
 
 export default function ScoutPage() {
-  const { filters, isDiscovering, discoveryStatus } = useScoutStore();
-  const { data, isLoading, isError } = useSearchBusinesses(filters);
+  const [query, setQuery] = useState('');
+  const [location, setLocation] = useState('');
+
+  const [stage, setStage] = useState<SearchStage>('idle');
+  const [progressMessage, setProgressMessage] = useState('');
+  const [providers, setProviders] = useState<ProviderStatus[]>([]);
+  const [results, setResults] = useState<DiscoveredBusiness[]>([]);
+  const [duration, setDuration] = useState<number | undefined>();
+  const [totalResults, setTotalResults] = useState(0);
+  const [isCached, setIsCached] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const abortRef = useRef<(() => void) | null>(null);
+
+  const isRunning = stage !== 'idle' && stage !== 'completed';
+
+  const handleSearch = useCallback(() => {
+    if (!query.trim() || isRunning) return;
+
+    // Reset state
+    setResults([]);
+    setProviders([]);
+    setDuration(undefined);
+    setTotalResults(0);
+    setIsCached(false);
+    setError(null);
+    setStage('planning');
+    setProgressMessage('Planning search...');
+
+    const abort = discoveryService.streamDiscover(query.trim(), location.trim() || undefined, {
+      onProgress(message, stageStr, providerList) {
+        setProgressMessage(message);
+        setStage(stageStr as SearchStage);
+        if (providerList && providerList.length > 0) {
+          setProviders(providerList);
+        }
+      },
+      onProvidersDone(providerStatuses) {
+        setProviders(providerStatuses);
+      },
+      onResults(businesses) {
+        setResults(businesses);
+        setTotalResults(businesses.length);
+      },
+      onFinished(data) {
+        setDuration(data.duration);
+        setTotalResults(data.total);
+        setIsCached(data.cached);
+        setStage('completed');
+        setProgressMessage(
+          data.cached
+            ? `Loaded ${data.total} results from cache`
+            : `Discovered ${data.total} businesses in ${data.duration.toFixed(1)}s`
+        );
+        if (data.providers) {
+          setProviders(data.providers);
+        }
+      },
+      onError(msg) {
+        setError(msg);
+        setStage('completed');
+      },
+    });
+
+    abortRef.current = abort;
+  }, [query, location, isRunning]);
+
+  const handleCancel = () => {
+    abortRef.current?.();
+    setStage('completed');
+    setProgressMessage('Search cancelled');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch();
+  };
 
   return (
-    <div className="h-full flex flex-col pt-2 pb-6 relative">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Scout</h1>
-        <p className="text-primary/60 mt-1">Discover, analyze and organize your potential clients.</p>
+    <div className="h-full flex flex-col pt-2 pb-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Scout</h1>
+        <p className="text-white/50 mt-1 text-sm">
+          Discover businesses from multiple sources using AI-powered parallel search.
+        </p>
       </div>
 
-      <ScoutFilters />
-
-      <div className="flex-1 min-h-0 relative">
-        {isDiscovering && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
-            <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4" />
-            <p className="font-medium text-lg">{discoveryStatus || 'Processing...'}</p>
-          </div>
-        )}
-        
-        {isError ? (
-          <div className="flex flex-col items-center justify-center h-[400px] text-center text-red-500 bg-red-500/5 rounded-xl border border-red-500/20">
-            <p className="font-medium">Failed to load businesses</p>
-            <p className="text-sm opacity-80 mt-1">Please try again later.</p>
-          </div>
-        ) : (
-          <ScoutTable data={data?.items || []} isLoading={isLoading} />
-        )}
+      {/* Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            id="discovery-query"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Find dentists in Chandigarh..."
+            disabled={isRunning}
+            className="w-full pl-10 pr-4 py-3 bg-white/8 border border-white/15 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all disabled:opacity-60"
+          />
+        </div>
+        <div className="relative sm:w-48">
+          <input
+            id="discovery-location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Location (optional)"
+            disabled={isRunning}
+            className="w-full px-4 py-3 bg-white/8 border border-white/15 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all disabled:opacity-60"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            id="discovery-search-btn"
+            onClick={handleSearch}
+            disabled={!query.trim() || isRunning}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <Zap className="w-4 h-4" />
+            {isRunning ? 'Searching...' : 'Discover'}
+          </button>
+          {isRunning && (
+            <button
+              onClick={handleCancel}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm bg-white/10 hover:bg-white/15 text-white/70 transition-all border border-white/15"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Pagination Controls */}
-      {data && data.pages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm">
-          <span className="text-primary/60">
-            Showing <span className="font-medium text-primary">{(data.page - 1) * data.size + 1}</span> to <span className="font-medium text-primary">{Math.min(data.page * data.size, data.total)}</span> of <span className="font-medium text-primary">{data.total}</span> results
-          </span>
-          <div className="flex items-center gap-2">
-            <button 
-              disabled={data.page === 1}
-              className="px-3 py-1.5 rounded-lg border border-border/50 bg-surface disabled:opacity-50 hover:bg-surface-hover transition-colors"
-            >
-              Previous
-            </button>
-            <button 
-              disabled={data.page === data.pages}
-              className="px-3 py-1.5 rounded-lg border border-border/50 bg-surface disabled:opacity-50 hover:bg-surface-hover transition-colors"
-            >
-              Next
-            </button>
-          </div>
+      {/* Progress Section */}
+      {stage !== 'idle' && (
+        <div className="space-y-4">
+          <SearchProgressCard
+            stage={stage}
+            message={progressMessage}
+            totalResults={totalResults}
+            duration={duration}
+            isFinished={stage === 'completed'}
+          />
+          {providers.length > 0 && (
+            <SearchProviderPanel providers={providers} isRunning={isRunning} />
+          )}
         </div>
       )}
 
-      <LeadDrawer />
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Cached indicator */}
+      {isCached && stage === 'completed' && (
+        <div className="flex items-center gap-2 text-xs text-white/40">
+          <Clock className="w-3.5 h-3.5" />
+          <span>Results served from cache (15 min TTL)</span>
+        </div>
+      )}
+
+      {/* Results */}
+      {stage !== 'idle' && (
+        <div className="flex-1 min-h-0">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-white/70 uppercase tracking-wider">
+              Results
+            </h2>
+            {results.length > 0 && (
+              <span className="text-xs text-white/40">{results.length} businesses discovered</span>
+            )}
+          </div>
+          <DiscoveryResultsTable
+            businesses={results}
+            isLoading={isRunning && results.length === 0}
+          />
+        </div>
+      )}
+
+      {/* Idle state */}
+      {stage === 'idle' && (
+        <div className="flex-1 flex flex-col items-center justify-center text-center text-white/25 py-20">
+          <Zap className="w-12 h-12 mb-4 opacity-30" />
+          <p className="text-base font-medium">Start a discovery search</p>
+          <p className="text-sm mt-1">
+            ScoutAI will query SearXNG, DuckDuckGo, Brave and more simultaneously
+          </p>
+        </div>
+      )}
     </div>
   );
 }
