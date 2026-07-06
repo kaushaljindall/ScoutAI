@@ -29,6 +29,7 @@ async def connect_db():
         from app.models.documents import Document, DocumentTemplate
         from app.models.analytics import Goal, AnalyticsEvent, Report
         from app.models.validation import ValidatedBusiness
+        from app.models.intelligence import BusinessIntelligence, PromptVersion
 
         await init_beanie(
             database=_client[settings.MONGODB_DB_NAME],
@@ -39,7 +40,8 @@ async def connect_db():
                 Conversation, Task, TimelineEvent, AIConversationAnalysis,
                 AIChat, AIMessage, UserPreferences, Branding,
                 Document, DocumentTemplate,
-                Goal, AnalyticsEvent, Report, ValidatedBusiness
+                Goal, AnalyticsEvent, Report, ValidatedBusiness,
+                BusinessIntelligence, PromptVersion
             ]
         )
         logger.info(f"✅ Connected to MongoDB: {settings.MONGODB_DB_NAME}")
